@@ -53,6 +53,83 @@ function getActiveLogo() {
   return window.couponLogo || window.rathnaLogo || null;
 }
 
+// ── GENERATION LIMIT (Free: 50 total) ──────────────────────────────────────────
+const FREE_LIMIT = 50;
+
+function isPremium() {
+  const exp = localStorage.getItem('prem_expiry');
+  return exp && Date.now() < parseInt(exp);
+}
+
+function getGenCount() {
+  return parseInt(localStorage.getItem('gen_count') || '0');
+}
+
+function incrementGenCount() {
+  const count = getGenCount() + 1;
+  localStorage.setItem('gen_count', count);
+  updateGenCounter();
+  return count;
+}
+
+function updateGenCounter() {
+  if (isPremium()) return;
+  const count = getGenCount();
+  const remaining = Math.max(0, FREE_LIMIT - count);
+  let el = document.getElementById('genCounterBadge');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'genCounterBadge';
+    el.className = 'gen-counter-badge';
+    const sidebar = document.querySelector('.sidebar-footer');
+    if (sidebar) sidebar.prepend(el);
+  }
+  el.innerHTML = remaining > 0
+    ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> ${remaining} free left`
+    : `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Limit reached`;
+  el.style.color = remaining > 10 ? '#16a34a' : remaining > 0 ? '#d97706' : '#dc2626';
+}
+
+function checkLimit(type) {
+  if (isPremium()) return true;
+  const count = getGenCount();
+  if (count >= FREE_LIMIT) {
+    showLimitModal(type);
+    return false;
+  }
+  incrementGenCount();
+  return true;
+}
+
+function showLimitModal(type) {
+  let modal = document.getElementById('limitModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'limitModal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px';
+    modal.innerHTML = `
+      <div style="background:#fff;border-radius:20px;padding:28px 24px;max-width:360px;width:100%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,0.5);animation:modalIn 0.25s ease">
+        <div style="font-size:2.5rem;margin-bottom:12px">🔒</div>
+        <h3 style="font-family:'Space Grotesk',sans-serif;font-size:1.2rem;color:#1e1b4b;margin-bottom:8px">Free Limit Reached</h3>
+        <p style="font-size:0.88rem;color:#6b7280;margin-bottom:20px;line-height:1.6">You've used all <strong>50 free generations</strong>.<br/>Upgrade to <strong>Premium</strong> for unlimited access.</p>
+        <button onclick="closeLimitModal();openPremium()" style="width:100%;padding:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:12px;font-size:0.95rem;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;margin-bottom:10px">
+          ⭐ Upgrade to Premium — ₹199
+        </button>
+        <button onclick="closeLimitModal()" style="width:100%;padding:10px;background:transparent;border:1.5px solid #e5e7eb;border-radius:12px;font-size:0.85rem;font-weight:600;color:#6b7280;cursor:pointer;font-family:'Inter',sans-serif">
+          Close
+        </button>
+      </div>`;
+    modal.addEventListener('click', e => { if (e.target === modal) closeLimitModal(); });
+    document.body.appendChild(modal);
+  }
+  modal.style.display = 'flex';
+}
+
+function closeLimitModal() {
+  const modal = document.getElementById('limitModal');
+  if (modal) modal.style.display = 'none';
+}
+
 function randomCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
@@ -63,6 +140,7 @@ function randomCode() {
 
 // ── COUPON GENERATOR ─────────────────────────────────────────────
 function generateCoupon() {
+  if (!checkLimit('coupon')) return;
   const canvas = document.getElementById('couponCanvas');
   const ctx    = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
@@ -1677,6 +1755,7 @@ async function wsmCopyMsg() {
 
 // ── BARCODE GENERATOR ────────────────────────────────────────────
 function generateBarcode() {
+  if (!checkLimit('barcode')) return;
   const value   = document.getElementById('barcodeValue').value.trim() || '123456789012';
   const format  = document.getElementById('barcodeFormat').value;
   const width   = parseFloat(document.getElementById('barcodeWidth').value);
@@ -1751,6 +1830,7 @@ function updateBarcodeFontLabel(v)   { document.getElementById('barcodeFontLabel
 let _qrInstance = null;
 
 function generateQR() {
+  if (!checkLimit('qr')) return;
   const type  = document.getElementById('qrType').value;
   const raw   = document.getElementById('qrValue').value.trim();
   const size  = parseInt(document.getElementById('qrSize').value);

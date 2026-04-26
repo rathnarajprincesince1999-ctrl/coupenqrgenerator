@@ -1627,3 +1627,23 @@ body.dark-premium .header-dark-btn:hover {
 
 body.dark-premium .logo-file-name { color: #a78bfa; }
 body.dark-premium .logo-preview-wrap img { background: rgba(30,30,55,0.85); border-color: rgba(139,92,246,0.3); }
+
+/* ── GENERATION COUNTER BADGE ────────────────────────────────── */
+.gen-counter-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  padding: 5px 10px;
+  background: var(--surface2);
+  border: 1.5px solid var(--border2);
+  border-radius: 20px;
+  margin-bottom: 6px;
+  transition: color 0.2s;
+}
+body.dark-premium .gen-counter-badge {
+  background: rgba(30,30,55,0.85);
+  border-color: rgba(139,92,246,0.3);
+}
