@@ -23,6 +23,43 @@ function pickStyle(card) {
 
 // ── RANDOM CODE ──────────────────────────────────────────────────
 // ── LOGO UPLOAD ───────────────────────────────────────────────────────────────────
+// ── COUPON SIZE ───────────────────────────────────────────────────────────────────
+function changeCouponSize() {
+  const val    = document.getElementById('couponSize').value;
+  const [w, h] = val.split('x').map(Number);
+  const canvas = document.getElementById('couponCanvas');
+  canvas.width  = w;
+  canvas.height = h;
+  const scale = 8;
+  const badge = document.getElementById('couponSizeBadge');
+  if (badge) badge.textContent = `${w * scale} × ${h * scale} px (8K)`;
+  generateCoupon();
+}
+
+// ── PRODUCT IMAGE UPLOAD ───────────────────────────────────────────────────
+function handleProductImgUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      window.couponProductImg = img;
+      document.getElementById('couponProductImgName').textContent = file.name;
+      generateCoupon();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetProductImg() {
+  window.couponProductImg = null;
+  document.getElementById('couponProductImg').value = '';
+  document.getElementById('couponProductImgName').textContent = 'No image';
+  generateCoupon();
+}
+
 function handleLogoUpload(input) {
   const file = input.files[0];
   if (!file) return;
@@ -158,9 +195,16 @@ function generateCoupon() {
     bg      : document.getElementById('couponBg').value,
     textCol : document.getElementById('couponText').value,
     accent  : document.getElementById('couponAccent').value,
+    font    : document.getElementById('couponFont') ? document.getElementById('couponFont').value : 'Inter, Segoe UI',
+    border  : document.getElementById('couponBorder') ? document.getElementById('couponBorder').value : 'none',
+    watermark: document.getElementById('couponWatermark') ? document.getElementById('couponWatermark').value : '',
+    productImg: window.couponProductImg || null,
   };
 
   ctx.clearRect(0, 0, W, H);
+
+  // Set global font for this render
+  window._couponFont = d.font;
 
   switch (currentStyle) {
     case 'classic':  drawClassic(ctx, W, H, d);  break;
@@ -183,6 +227,54 @@ function generateCoupon() {
 }
 
 // ── STYLE 1 — CLASSIC ────────────────────────────────────────────
+// ── DRAW EXTRAS (border, watermark, product image) ─────────────────────────
+function drawExtras(ctx, W, H, d) {
+  // Product image (right side)
+  if (d.productImg) {
+    const pw = Math.floor(W * 0.18), ph = Math.floor(W * 0.18);
+    const px = W - pw - 20, py = H / 2 - ph / 2;
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur  = 12;
+    rr(ctx, px, py, pw, ph, 10); ctx.clip();
+    ctx.drawImage(d.productImg, px, py, pw, ph);
+    ctx.restore();
+  }
+  // Border
+  if (d.border && d.border !== 'none') {
+    ctx.save();
+    if (d.border === 'gold') {
+      const gb = ctx.createLinearGradient(0, 0, W, H);
+      gb.addColorStop(0, '#f59e0b'); gb.addColorStop(0.5, '#fde68a'); gb.addColorStop(1, '#d97706');
+      ctx.strokeStyle = gb; ctx.lineWidth = 4;
+    } else {
+      ctx.strokeStyle = d.accent; ctx.lineWidth = 3;
+      if (d.border === 'dashed') ctx.setLineDash([10, 6]);
+      if (d.border === 'dotted') ctx.setLineDash([3, 5]);
+      if (d.border === 'double') {
+        ctx.lineWidth = 2;
+        rr(ctx, 3, 3, W-6, H-6, 16); ctx.stroke();
+        rr(ctx, 8, 8, W-16, H-16, 13); ctx.stroke();
+        ctx.restore(); return;
+      }
+    }
+    rr(ctx, 3, 3, W-6, H-6, 16); ctx.stroke();
+    ctx.restore();
+  }
+  // Watermark
+  if (d.watermark) {
+    ctx.save();
+    ctx.globalAlpha = 0.08;
+    ctx.font = `bold ${Math.floor(W / 10)}px Inter, Segoe UI`;
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.translate(W / 2, H / 2);
+    ctx.rotate(-Math.PI / 8);
+    ctx.fillText(d.watermark.toUpperCase(), 0, 0);
+    ctx.restore();
+  }
+}
+
 function drawClassic(ctx, W, H, d) {
   // Background
   ctx.fillStyle = d.bg;
@@ -2130,6 +2222,7 @@ async function premActivateCode() {
 
 // ── SHOW ACTIVE BADGE ─────────────────────────────────────────────
 function premShowActiveBadge() {
+  document.body.classList.add('prem-active');
   const footer = document.querySelector('.sidebar-footer');
   if (!footer) return;
   if (document.getElementById('premActiveBadge')) return;
@@ -2187,6 +2280,7 @@ function togglePremDark() {
     localStorage.removeItem('prem_code');
     localStorage.removeItem('prem_dark');
     document.body.classList.remove('dark-premium');
+    document.body.classList.remove('prem-active');
   }
 })();
 
