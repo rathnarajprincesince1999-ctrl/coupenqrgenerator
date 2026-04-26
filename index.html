@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Generator — Coupon · Barcode · QR | A RATHNA Product</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+
+  <!-- ── HEADER ─────────────────────────────────────────────── -->
+  <header>
+    <div class="header-inner">
+      <div class="header-logo">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+          <rect width="36" height="36" rx="10" fill="url(#hg)"/>
+          <path d="M8 10h6l4 8 4-8h6l-8 16z" fill="#fff" opacity=".9"/>
+          <defs><linearGradient id="hg" x1="0" y1="0" x2="36" y2="36"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#ec4899"/></linearGradient></defs>
+        </svg>
+        <div>
+          <span class="header-brand">Generator</span>
+          <span class="header-sub">A RATHNA Product</span>
+        </div>
+      </div>
+      <p class="header-tagline">
+        <span class="header-free-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          100% Free
+        </span>
+        Free Generator for
+        <span class="header-highlight">Coupons</span>,
+        <span class="header-highlight">Barcodes</span> &amp;
+        <span class="header-highlight">QR Codes</span>
+        &mdash; No sign-up needed
+      </p>
+    </div>
+  </header>
+
+  <!-- ── SIDEBAR + MAIN WRAPPER ──────────────────────────────── -->
+  <div class="app-body">  
+  <nav class="sidebar">
+
+    <!-- Logo -->
+    <div class="sidebar-logo">
+      <img src="rathna logo 2.0.png" alt="RATHNA" class="sidebar-logo-img" onerror="this.style.display='none'"/>
+      <div class="sidebar-logo-text">
+        <span class="sidebar-brand">Generator</span>
+        <span class="sidebar-sub">A RATHNA Product</span>
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+    <p class="sidebar-label">TOOLS</p>
+
+    <!-- Coupon Card -->
+    <button class="sidebar-card active" data-tab="coupon" onclick="switchTab(this,'coupon')">
+      <div class="sidebar-card-img-wrap">
+        <img src="Coupen Gene.png" alt="" onerror="this.style.display='none'" />
+        <svg class="sidebar-card-svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none"/></svg>
+      </div>
+      <div class="sidebar-card-info">
+        <span class="sidebar-card-title"></span>
+      </div>
+      <svg class="sidebar-card-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+
+    <!-- Barcode Card -->
+    <button class="sidebar-card" data-tab="barcode" onclick="switchTab(this,'barcode')">
+      <div class="sidebar-card-img-wrap">
+        <img src="bar code.png" alt="" onerror="this.style.display='none'" />
+        <svg class="sidebar-card-svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5v14M7 5v14M11 5v14M15 5v10M19 5v14M17 5v14M13 5v10"/></svg>
+      </div>
+      <div class="sidebar-card-info">
+        <span class="sidebar-card-title"></span>
+      </div>
+      <svg class="sidebar-card-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+
+    <!-- QR Code Card -->
+    <button class="sidebar-card" data-tab="qrcode" onclick="switchTab(this,'qrcode')">
+      <div class="sidebar-card-img-wrap">
+        <img src="QR generator.png" alt="" onerror="this.style.display='none'" />
+        <svg class="sidebar-card-svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/></svg>
+      </div>
+      <div class="sidebar-card-info">
+        <span class="sidebar-card-title"></span>
+      </div>
+      <svg class="sidebar-card-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-footer">
+      <span>A RATHNA Product</span>
+      <span>© since 2026</span>
+    </div>
+
+    <!-- Premium Button -->
+    <button class="sidebar-premium-btn" onclick="openPremium()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+      Premium
+    </button>
+
+  </nav>
+  <div class="main-content">
+
+  <!-- ══════════════════════════════════════════════════════════
+       COUPON TAB
+  ══════════════════════════════════════════════════════════════ -->
+  <section id="coupon" class="tab-content active">
+    <div class="gen-layout">
+
+      <!-- FORM -->
+      <aside class="form-panel">
+        <div class="panel-head">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none"/></svg>
+          Coupon Details
+        </div>
+
+        <div class="field-group">
+          <div class="field">
+            <label>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+              Brand / Company
+            </label>
+            <input type="text" id="couponBrand" value="RATHNA GROUPS" placeholder="e.g. RATHNA GROUPS"/>
+          </div>
+          <div class="field">
+            <label>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+              Offer Title
+            </label>
+            <input type="text" id="couponTitle" value="MEGA SALE" placeholder="e.g. MEGA SALE"/>
+          </div>
+          <div class="field">
+            <label>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M16 8l-8 8M8 8l8 8" stroke-width="0"/><path d="M9 9h.01M15 15h.01" stroke-width="3" stroke-linecap="round"/></svg>
+              Discount / Offer
+            </label>
+            <input type="text" id="couponDiscount" value="30% OFF" placeholder="e.g. 30% OFF or ₹200 OFF"/>
+          </div>
+          <div class="field">
+            <label>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12h.01"/><path d="M17 12h.01"/><path d="M7 12h.01"/></svg>
+              Coupon Code
+            </label>
+            <div class="input-with-btn">
+              <input type="text" id="couponCode" value="SAVE30" placeholder="e.g. SAVE30"/>
+              <button class="icon-btn" title="Generate random code" onclick="randomCode()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                Valid Until
+              </label>
+              <input type="date" id="couponExpiry"/>
+            </div>
+            <div class="field">
+              <label>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                Min. Purchase
+              </label>
+              <input type="text" id="couponMin" value="₹500" placeholder="e.g. ₹500"/>
+            </div>
+          </div>
+          <div class="field">
+            <label>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              Description
+            </label>
+            <input type="text" id="couponDesc" value="On all products above ₹500" placeholder="Short description"/>
+          </div>
+          <div class="field">
+            <label>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+              Terms &amp; Conditions
+            </label>
+            <input type="text" id="couponTerms" value="T&amp;C Apply. One use per customer." placeholder="Terms"/>
+          </div>
+          <div class="field">
+            <label>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+              Website / Redeem Link
+            </label>
+            <input type="text" id="couponLink" value="https://www.rathnaproducts.store" placeholder="e.g. https://rathnagroups.com/offer"/>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+      </aside>
+
+      <!-- RIGHT COLUMN -->
+      <div class="coupon-right-col">
+
+        <!-- PREVIEW -->
+        <div class="preview-panel">
+          <div class="preview-head">
+            <span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              Live Preview
+            </span>
+            <span class="preview-badge">4800 × 2400 px (8K)</span>
+          </div>
+          <div class="canvas-wrap">
+            <canvas id="couponCanvas" width="600" height="300"></canvas>
+          </div>
+        </div>
+
+        <!-- STYLE + COLORS + BUTTONS -->
+        <div class="style-panel">
+          <div class="panel-head" style="margin-bottom:12px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+            Style &amp; Colors
+          </div>
+          <div class="style-grid">
+            <button class="style-card active" data-style="classic" onclick="pickStyle(this)"><div class="style-thumb classic-thumb"></div><span>Classic</span></button>
+            <button class="style-card" data-style="modern" onclick="pickStyle(this)"><div class="style-thumb modern-thumb"></div><span>Modern</span></button>
+            <button class="style-card" data-style="minimal" onclick="pickStyle(this)"><div class="style-thumb minimal-thumb"></div><span>Minimal</span></button>
+            <button class="style-card" data-style="luxury" onclick="pickStyle(this)"><div class="style-thumb luxury-thumb"></div><span>Luxury</span></button>
+            <button class="style-card" data-style="festival" onclick="pickStyle(this)"><div class="style-thumb festival-thumb"></div><span>Festival</span></button>
+            <button class="style-card" data-style="neon" onclick="pickStyle(this)"><div class="style-thumb neon-thumb"></div><span>Neon</span></button>
+            <button class="style-card" data-style="saree" onclick="pickStyle(this)"><div class="style-thumb saree-thumb"></div><span>Saree</span></button>
+            <button class="style-card" data-style="grocery" onclick="pickStyle(this)"><div class="style-thumb grocery-thumb"></div><span>Grocery</span></button>
+            <button class="style-card" data-style="vegetable" onclick="pickStyle(this)"><div class="style-thumb vegetable-thumb"></div><span>Vegetable</span></button>
+            <button class="style-card" data-style="fruit" onclick="pickStyle(this)"><div class="style-thumb fruit-thumb"></div><span>Fruit</span></button>
+            <button class="style-card" data-style="homefood" onclick="pickStyle(this)"><div class="style-thumb homefood-thumb"></div><span>Home Food</span></button>
+            <button class="style-card" data-style="dairy" onclick="pickStyle(this)"><div class="style-thumb dairy-thumb"></div><span>Dairy</span></button>
+            <button class="style-card" data-style="driedveg" onclick="pickStyle(this)"><div class="style-thumb driedveg-thumb"></div><span>Dried Veg</span></button>
+            <button class="style-card" data-style="nuts" onclick="pickStyle(this)"><div class="style-thumb nuts-thumb"></div><span>Nuts</span></button>
+            <button class="style-card" data-style="herbal" onclick="pickStyle(this)"><div class="style-thumb herbal-thumb"></div><span>Herbal</span></button>
+            <button class="style-card" data-style="seeds" onclick="pickStyle(this)"><div class="style-thumb seeds-thumb"></div><span>Seeds</span></button>
+          </div>
+          <div class="color-row">
+            <div class="field"><label>Background</label><input type="color" id="couponBg" value="#6366f1" oninput="generateCoupon()"/></div>
+            <div class="field"><label>Text Color</label><input type="color" id="couponText" value="#ffffff" oninput="generateCoupon()"/></div>
+            <div class="field"><label>Accent</label><input type="color" id="couponAccent" value="#f59e0b" oninput="generateCoupon()"/></div>
+          </div>
+          <div class="divider"></div>
+          <button class="btn btn-primary" onclick="generateCoupon()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+            Generate Coupon
+          </button>
+          <div class="btn-row">
+            <button class="btn btn-outline" onclick="downloadCoupon()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download PNG
+            </button>
+            <button class="btn btn-whatsapp" onclick="shareOnWhatsApp()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.533 5.857L.057 23.428a.5.5 0 00.609.61l5.71-1.496A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.95 9.95 0 01-5.187-1.453l-.371-.22-3.388.888.903-3.296-.242-.381A9.953 9.953 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+              Share WhatsApp
+            </button>
+          </div>
+        </div>
+
+      </div><!-- end coupon-right-col -->
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       BARCODE TAB
+  ══════════════════════════════════════════════════════════════ -->
+  <section id="barcode" class="tab-content">
+    <div class="gen-layout">
+
+      <aside class="form-panel">
+        <div class="panel-head">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 5v14M7 5v14M11 5v14M15 5v10M19 5v14M17 5v14M13 5v10"/></svg>
+          Barcode Details
+        </div>
+
+        <div class="field-group">
+          <div class="field">
+            <label>Barcode Value</label>
+            <input type="text" id="barcodeValue" value="123456789012" placeholder="Enter value" oninput="generateBarcode()"/>
+          </div>
+          <div class="field">
+            <label>Format</label>
+            <select id="barcodeFormat" onchange="generateBarcode()">
+              <option value="CODE128">CODE128 — Universal</option>
+              <option value="EAN13">EAN-13 — Retail</option>
+              <option value="EAN8">EAN-8 — Short Retail</option>
+              <option value="UPC">UPC-A — US Retail</option>
+              <option value="CODE39">CODE39 — Industrial</option>
+              <option value="ITF14">ITF-14 — Shipping</option>
+              <option value="MSI">MSI — Inventory</option>
+              <option value="pharmacode">Pharmacode — Medical</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Product Name / Label</label>
+            <input type="text" id="barcodeLabel" placeholder="e.g. RATHNA Notebook A4" oninput="generateBarcode()"/>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Bar Color</label>
+              <input type="color" id="barcodeColor" value="#000000" oninput="generateBarcode()"/>
+            </div>
+            <div class="field">
+              <label>Background</label>
+              <input type="color" id="barcodeBg" value="#ffffff" oninput="generateBarcode()"/>
+            </div>
+          </div>
+          <div class="field">
+            <label>Bar Width — <span id="barcodeWidthLabel">2</span></label>
+            <input type="range" id="barcodeWidth" min="1" max="4" step="0.5" value="2" oninput="updateBarcodeWidthLabel(this.value);generateBarcode()"/>
+          </div>
+          <div class="field">
+            <label>Bar Height — <span id="barcodeHeightLabel">100</span>px</label>
+            <input type="range" id="barcodeHeight" min="40" max="200" step="10" value="100" oninput="updateBarcodeHeightLabel(this.value);generateBarcode()"/>
+          </div>
+          <div class="field">
+            <label>Show Value Text</label>
+            <div class="toggle-row">
+              <label class="toggle"><input type="checkbox" id="barcodeShowText" checked/><span class="toggle-track"></span></label>
+              <span id="barcodeShowTextLabel">Yes</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Font Size — <span id="barcodeFontLabel">16</span>px</label>
+            <input type="range" id="barcodeFont" min="8" max="32" step="2" value="16" oninput="updateBarcodeFontLabel(this.value);generateBarcode()"/>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <button class="btn btn-primary" onclick="generateBarcode()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 5v14M7 5v14M11 5v14M15 5v10M19 5v14"/></svg>
+          Generate Barcode
+        </button>
+        <div class="btn-row">
+          <button class="btn btn-outline" onclick="downloadBarcode()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            PNG
+          </button>
+          <button class="btn btn-outline" onclick="downloadBarcodeSVG()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            SVG
+          </button>
+        </div>
+      </aside>
+
+      <div class="preview-panel">
+        <div class="preview-head">
+          <span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Live Preview
+          </span>
+        </div>
+        <div id="barcodePreviewBox">
+          <svg id="barcodesvg"></svg>
+          <p id="barcodeLabelText"></p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       QR CODE TAB
+  ══════════════════════════════════════════════════════════════ -->
+  <section id="qrcode" class="tab-content">
+    <div class="gen-layout">
+
+      <aside class="form-panel">
+        <div class="panel-head">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          QR Code Details
+        </div>
+
+        <div class="field-group">
+          <div class="field">
+            <label>Type</label>
+            <select id="qrType" onchange="updateQrPlaceholder();generateQR()">
+              <option value="url">Website URL</option>
+              <option value="text">Plain Text</option>
+              <option value="phone">Phone Number</option>
+              <option value="email">Email Address</option>
+              <option value="whatsapp">WhatsApp Message</option>
+              <option value="upi">UPI Payment</option>
+            </select>
+          </div>
+          <div class="field">
+            <label id="qrValueLabel">URL</label>
+            <input type="text" id="qrValue" value="https://www.rathnaproducts.store" placeholder="https://www.rathnaproducts.store" oninput="generateQR()"/>
+          </div>
+          <div class="field">
+            <label>Label Below QR</label>
+            <input type="text" id="qrLabel" placeholder="e.g. Scan to visit our store" oninput="generateQR()"/>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Dark Color</label>
+              <input type="color" id="qrDark" value="#1a1a2e" oninput="generateQR()"/>
+            </div>
+            <div class="field">
+              <label>Light Color</label>
+              <input type="color" id="qrLight" value="#ffffff" oninput="generateQR()"/>
+            </div>
+          </div>
+          <div class="field">
+            <label>Size — <span id="qrSizeLabel">220</span>px</label>
+            <input type="range" id="qrSize" min="100" max="400" step="20" value="220" oninput="updateQrSizeLabel(this.value);generateQR()"/>
+          </div>
+          <div class="field">
+            <label>Error Correction</label>
+            <select id="qrEcc" onchange="generateQR()">
+              <option value="L">L — Low (7%)</option>
+              <option value="M" selected>M — Medium (15%)</option>
+              <option value="Q">Q — Quartile (25%)</option>
+              <option value="H">H — High (30%)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <button class="btn btn-primary" onclick="generateQR()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Generate QR Code
+        </button>
+        <button class="btn btn-outline" onclick="downloadQR()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download PNG
+        </button>
+      </aside>
+
+      <div class="preview-panel">
+        <div class="preview-head">
+          <span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Live Preview
+          </span>
+        </div>
+        <div id="qrPreviewBox">
+          <div id="qrcode-output"></div>
+          <p id="qrLabelText"></p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  </div><!-- end main-content -->
+  </div><!-- end app-body -->
+
+  <!-- ══ PREMIUM MODAL ══════════════════════════════════════════ -->
+  <div id="premiumOverlay" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:16px">
+    <div class="prem-box">
+
+      <!-- SCREEN 1: Benefits -->
+      <div id="premScreen1">
+        <div class="prem-head">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#f59e0b"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+          <span>Premium Benefits</span>
+          <button class="prem-close" onclick="closePremium()">&times;</button>
+        </div>
+        <p class="prem-sub">Unlock the full power of Generator — A RATHNA Product</p>
+        <div class="prem-features">
+          <div class="prem-feat"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> All 16 Coupon Styles (incl. Saree, Grocery, Herbal &amp; more)</div>
+          <div class="prem-feat"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> 8K Ultra HD Download (4800×2400 px)</div>
+          <div class="prem-feat"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Unlimited Coupon Generation</div>
+          <div class="prem-feat"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> WhatsApp Share with 8K Image</div>
+          <div class="prem-feat"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Barcode &amp; QR Code — All Formats</div>
+          <div class="prem-feat"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Priority Support via WhatsApp</div>
+          <div class="prem-feat"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Valid for 1 Month from Activation</div>
+        </div>
+        <div class="prem-price-box">
+          <span class="prem-price">₹199</span>
+          <span class="prem-period">/ month</span>
+        </div>
+        <button class="prem-btn-buy" onclick="premGoCheckout()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+          Buy Premium — ₹199
+        </button>
+        <button class="prem-btn-code" onclick="premGoEnterCode()">
+          Already have a code? Activate here
+        </button>
+      </div>
+
+      <!-- SCREEN 2: UPI Checkout -->
+      <div id="premScreen2" style="display:none">
+        <div class="prem-head">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          <span>Checkout — ₹199</span>
+          <button class="prem-close" onclick="closePremium()">&times;</button>
+        </div>
+        <p class="prem-sub">Pay via UPI and submit your Transaction ID</p>
+
+        <div class="prem-upi-box">
+          <div class="prem-upi-label">Scan QR or pay to UPI ID</div>
+          <div id="premQrCode" class="prem-qr"></div>
+          <div class="prem-upi-id-row">
+            <span id="premUpiIdText" class="prem-upi-id">rathnaraj1234567890-7@okhdfcbank</span>
+            <button class="prem-copy-btn" onclick="premCopyUpi()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              Copy
+            </button>
+          </div>
+          <div class="prem-amount-tag">₹199 — 1 Month Premium</div>
+        </div>
+
+        <div class="prem-field">
+          <label>Your Name</label>
+          <input type="text" id="premName" placeholder="e.g. Rathna Kumar"/>
+        </div>
+        <div class="prem-field">
+          <label>Phone Number</label>
+          <input type="tel" id="premPhone" placeholder="e.g. 9876543210" maxlength="10"/>
+        </div>
+        <div class="prem-field">
+          <label>UPI Transaction ID</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="text" id="premTxnId" placeholder="e.g. 4238XXXXXXXX" oninput="premTxnCheck()"/>
+            <span id="premTxnCheck"></span>
+          </div>
+        </div>
+
+        <button class="prem-btn-buy" onclick="premSubmitOrder()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Submit Order
+        </button>
+        <button class="prem-btn-back" onclick="premGoScreen(1)">← Back</button>
+      </div>
+
+      <!-- SCREEN 3: Order Submitted -->
+      <div id="premScreen3" style="display:none">
+        <div class="prem-head">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Order Submitted!</span>
+          <button class="prem-close" onclick="closePremium()">&times;</button>
+        </div>
+        <div class="prem-success-box">
+          <div class="prem-success-icon">🎉</div>
+          <p>Your payment request has been sent to <strong>RATHNA</strong>.</p>
+          <p>We will verify your payment and send your <strong>Premium Access Code</strong> to your WhatsApp within <strong>30 minutes</strong>.</p>
+          <div class="prem-order-id" id="premOrderId"></div>
+        </div>
+        <button class="prem-btn-buy" onclick="premGoEnterCode()">
+          Enter Code When Received
+        </button>
+        <button class="prem-btn-back" onclick="closePremium()">Close</button>
+      </div>
+
+      <!-- SCREEN 4: Enter Code -->
+      <div id="premScreen4" style="display:none">
+        <div class="prem-head">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-4 0v2M8 11h.01M12 11h.01M16 11h.01"/></svg>
+          <span>Activate Premium</span>
+          <button class="prem-close" onclick="closePremium()">&times;</button>
+        </div>
+        <p class="prem-sub">Enter the code sent to your WhatsApp</p>
+        <div class="prem-field">
+          <label>Premium Access Code</label>
+          <input type="text" id="premCode" placeholder="e.g. PREM-XXXX-XXXX" style="text-transform:uppercase;letter-spacing:2px;font-weight:700;font-size:1.1rem"/>
+        </div>
+        <div id="premCodeMsg" style="font-size:0.85rem;margin-bottom:10px;min-height:20px"></div>
+        <button class="prem-btn-buy" onclick="premActivateCode()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Activate
+        </button>
+        <button class="prem-btn-back" onclick="premGoScreen(1)">← Back</button>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    const _d = new Date();
+    _d.setDate(_d.getDate() + 30);
+    document.getElementById('couponExpiry').value = _d.toISOString().split('T')[0];
+
+    window.rathnaLogo = new Image();
+    window.rathnaLogo.onload  = () => generateCoupon();
+    window.rathnaLogo.onerror = () => { console.warn('Logo failed to load'); generateCoupon(); };
+    window.rathnaLogo.src = 'rathna logo 2.0.png';
+
+    // toggle label
+    document.getElementById('barcodeShowText').addEventListener('change', function() {
+      document.getElementById('barcodeShowTextLabel').textContent = this.checked ? 'Yes' : 'No';
+      generateBarcode();
+    });
+
+    generateBarcode();
+    generateQR();
+  </script>
+</body>
+</html>
