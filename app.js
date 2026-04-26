@@ -22,6 +22,37 @@ function pickStyle(card) {
 }
 
 // ── RANDOM CODE ──────────────────────────────────────────────────
+// ── LOGO UPLOAD ───────────────────────────────────────────────────────────────────
+function handleLogoUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      window.couponLogo = img;
+      document.getElementById('couponLogoImg').src = e.target.result;
+      document.getElementById('couponLogoPreview').style.display = 'flex';
+      document.getElementById('couponLogoName').textContent = file.name;
+      generateCoupon();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetLogo() {
+  window.couponLogo = null;
+  document.getElementById('couponLogoInput').value = '';
+  document.getElementById('couponLogoName').textContent = 'RATHNA Logo (default)';
+  document.getElementById('couponLogoPreview').style.display = 'none';
+  generateCoupon();
+}
+
+function getActiveLogo() {
+  return window.couponLogo || window.rathnaLogo || null;
+}
+
 function randomCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
@@ -106,7 +137,7 @@ function drawClassic(ctx, W, H, d) {
   ctx.fillText(d.discount, 0, -14);
   ctx.restore();
   // Brand logo top-left of left panel
-  const _cl = window.rathnaLogo;
+  const _cl = getActiveLogo();
   if (_cl) {
     const _ls = 36;
     ctx.save();
@@ -211,7 +242,7 @@ function drawModern(ctx, W, H, d) {
   rr(ctx, 0, 0, W, 5, 18, 'top'); ctx.fill();
 
   // Brand logo
-  const _ml = window.rathnaLogo;
+  const _ml = getActiveLogo();
   if (_ml) {
     const _ls = 32;
     ctx.save();
@@ -312,7 +343,7 @@ function drawMinimal(ctx, W, H, d) {
   ctx.fillRect(28, 30, 4, 180);
 
   // Brand logo
-  const _minl = window.rathnaLogo;
+  const _minl = getActiveLogo();
   if (_minl) {
     const _ls = 32;
     ctx.save();
@@ -434,7 +465,7 @@ function drawLuxury(ctx, W, H, d) {
   ctx.fillRect(40, 0, W - 80, 3);
 
   // Brand logo
-  const _luxl = window.rathnaLogo;
+  const _luxl = getActiveLogo();
   if (_luxl) {
     const _ls = 32;
     ctx.save();
@@ -537,7 +568,7 @@ function drawFestival(ctx, W, H, d) {
   ctx.restore();
 
   // Brand logo
-  const _fesl = window.rathnaLogo;
+  const _fesl = getActiveLogo();
   if (_fesl) {
     const _ls = 32;
     ctx.save();
@@ -641,7 +672,7 @@ function drawNeon(ctx, W, H, d) {
   ctx.restore();
 
   // Brand logo
-  const _neonl = window.rathnaLogo;
+  const _neonl = getActiveLogo();
   if (_neonl) {
     const _ls = 32;
     ctx.save();
@@ -773,7 +804,7 @@ function drawSaree(ctx, W, H, d) {
   ctx.restore();
 
   // Brand logo area
-  const _sl = window.rathnaLogo;
+  const _sl = getActiveLogo();
   if (_sl) {
     const ls = 36;
     ctx.save();
@@ -1387,7 +1418,7 @@ function drawBadgeAndLogo(ctx, W, H, lightBg = false) {
   ctx.fillText('A RATHNA Product', bx + bw / 2, by + bh / 2);
   ctx.restore();
 
-  const logo = window.rathnaLogo;
+  const logo = getActiveLogo();
 
   // ── Logo bottom-right — circular clipped ──────────────────────
   const cr = 46;
@@ -2037,6 +2068,11 @@ function premShowActiveBadge() {
     document.body.classList.add('dark-premium');
     const lbl = document.getElementById('darkModeLabel');
     if (lbl) lbl.textContent = 'Light Mode';
+    const sunPath = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>';
+    const svg1 = document.querySelector('#darkModeToggle svg');
+    const svg2 = document.getElementById('headerDarkIcon');
+    if (svg1) svg1.innerHTML = sunPath;
+    if (svg2) svg2.innerHTML = sunPath;
   }
 }
 
@@ -2051,12 +2087,13 @@ function togglePremDark() {
   localStorage.setItem('prem_dark', isDark ? '1' : '0');
   const lbl = document.getElementById('darkModeLabel');
   if (lbl) lbl.textContent = isDark ? 'Light Mode' : 'Dark Mode';
-  const svg = document.querySelector('#darkModeToggle svg');
-  if (svg) {
-    svg.innerHTML = isDark
-      ? '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>'
-      : '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
-  }
+  const moonPath = '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
+  const sunPath  = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>';
+  const svgContent = isDark ? sunPath : moonPath;
+  const svg1 = document.querySelector('#darkModeToggle svg');
+  const svg2 = document.getElementById('headerDarkIcon');
+  if (svg1) svg1.innerHTML = svgContent;
+  if (svg2) svg2.innerHTML = svgContent;
 }
 
 // ── CHECK PREMIUM ON LOAD ─────────────────────────────────────────

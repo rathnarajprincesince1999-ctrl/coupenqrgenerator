@@ -1544,3 +1544,86 @@ body.dark-premium .prem-dark-toggle {
 
 /* Show toggle only for premium users */
 .prem-dark-toggle.visible { display: flex; }
+
+/* ── HEADER DARK MODE BUTTON ─────────────────────────────────── */
+.header-dark-btn {
+  width: 42px; height: 42px;
+  background: rgba(255,255,255,0.15);
+  border: 1.5px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+.header-dark-btn:hover {
+  background: rgba(255,255,255,0.25);
+  border-color: rgba(255,255,255,0.6);
+  transform: scale(1.08);
+}
+body.dark-premium .header-dark-btn {
+  background: rgba(245,158,11,0.15);
+  border-color: rgba(245,158,11,0.4);
+  color: #f59e0b;
+}
+body.dark-premium .header-dark-btn:hover {
+  background: rgba(245,158,11,0.25);
+}
+
+/* ── LOGO UPLOAD ─────────────────────────────────────────────── */
+.logo-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.logo-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  background: linear-gradient(135deg, var(--accent), #8b5cf6);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+.logo-upload-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+
+.logo-file-name {
+  font-size: 0.75rem;
+  color: var(--text2);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logo-preview-wrap {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-preview-wrap img {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  border-radius: 10px;
+  border: 1.5px solid var(--border2);
+  background: #fff;
+  padding: 3px;
+}
+
+body.dark-premium .logo-file-name { color: #a78bfa; }
+body.dark-premium .logo-preview-wrap img { background: rgba(30,30,55,0.85); border-color: rgba(139,92,246,0.3); }
