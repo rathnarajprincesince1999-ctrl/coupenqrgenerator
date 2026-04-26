@@ -2027,6 +2027,36 @@ function premShowActiveBadge() {
   badge.className = 'prem-active-badge';
   badge.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg> Premium`;
   footer.appendChild(badge);
+
+  // Show dark mode toggle
+  const toggle = document.getElementById('darkModeToggle');
+  if (toggle) toggle.classList.add('visible');
+
+  // Restore dark mode if was previously active
+  if (localStorage.getItem('prem_dark') === '1') {
+    document.body.classList.add('dark-premium');
+    const lbl = document.getElementById('darkModeLabel');
+    if (lbl) lbl.textContent = 'Light Mode';
+  }
+}
+
+// ── TOGGLE PREMIUM DARK MODE ───────────────────────────────────────────
+function togglePremDark() {
+  const exp = localStorage.getItem('prem_expiry');
+  if (!exp || Date.now() >= parseInt(exp)) {
+    premToast('⚠️ Dark Mode is a Premium feature.');
+    return;
+  }
+  const isDark = document.body.classList.toggle('dark-premium');
+  localStorage.setItem('prem_dark', isDark ? '1' : '0');
+  const lbl = document.getElementById('darkModeLabel');
+  if (lbl) lbl.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+  const svg = document.querySelector('#darkModeToggle svg');
+  if (svg) {
+    svg.innerHTML = isDark
+      ? '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>'
+      : '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
+  }
 }
 
 // ── CHECK PREMIUM ON LOAD ─────────────────────────────────────────
@@ -2035,10 +2065,11 @@ function premShowActiveBadge() {
   if (exp && Date.now() < parseInt(exp)) {
     premShowActiveBadge();
   } else if (exp) {
-    // Expired — clear
     localStorage.removeItem('prem_active');
     localStorage.removeItem('prem_expiry');
     localStorage.removeItem('prem_code');
+    localStorage.removeItem('prem_dark');
+    document.body.classList.remove('dark-premium');
   }
 })();
 
