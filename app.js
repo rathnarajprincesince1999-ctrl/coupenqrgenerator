@@ -1946,12 +1946,14 @@ function premSubmitOrder() {
   const orderId = 'PREM' + Date.now();
   const dateStr = new Date().toLocaleString('en-IN', { dateStyle:'medium', timeStyle:'short' });
 
-  // POST to Google Sheets
-  fetch(PREM_SHEETS_URL, {
-    method : 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body   : JSON.stringify({ action:'order', orderId, name, phone, txnId:txn, amount:PREM_AMOUNT })
-  }).catch(() => {});
+  // Send order to Google Sheets via GET (reliable from browser)
+  const params = new URLSearchParams({
+    action : 'order',
+    orderId, name, phone,
+    txnId  : txn,
+    amount : PREM_AMOUNT
+  });
+  fetch(PREM_SHEETS_URL + '?' + params.toString()).catch(() => {});
 
   localStorage.setItem('prem_pending', JSON.stringify({ orderId, name, phone, txn, date: dateStr }));
 

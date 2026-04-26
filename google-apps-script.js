@@ -60,12 +60,22 @@ function doGet(e) {
   const action = e.parameter.action || '';
   const code   = (e.parameter.code || '').toUpperCase().trim();
 
-  if (action === 'verify' && code) {
-    return verifyCode(code);
+  if (action === 'verify' && code) return verifyCode(code);
+  if (action === 'orders')         return getAllOrders();
+
+  // Save order via GET (browser fetch workaround)
+  if (action === 'order') {
+    return saveOrder({
+      orderId: e.parameter.orderId || '',
+      name   : e.parameter.name    || '',
+      phone  : e.parameter.phone   || '',
+      txnId  : e.parameter.txnId   || '',
+      amount : e.parameter.amount  || 199,
+    });
   }
 
-  if (action === 'orders') {
-    return getAllOrders();
+  if (action === 'approve') {
+    return approveOrder({ orderId: e.parameter.orderId || '' });
   }
 
   return respond({ error: 'Invalid action' });
