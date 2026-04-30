@@ -6,13 +6,20 @@
 // ── TAB SWITCHING ────────────────────────────────────────────────
 function switchTab(btn, tab) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.sidebar-card').forEach(el => el.classList.remove('active'));
   document.getElementById(tab).classList.add('active');
   btn.classList.add('active');
 }
 
 // ── STYLE PICKER ─────────────────────────────────────────────────
 let currentStyle = 'classic';
+
+// Debounced preview ” avoids burning free limit on every keystroke
+let _couponTimer = null;
+function generateCouponPreview() {
+  clearTimeout(_couponTimer);
+  _couponTimer = setTimeout(generateCoupon, 350);
+}
 function pickStyle(card) {
   const grid = card.closest('.style-grid') || document.querySelector('.style-grid');
   grid.querySelectorAll('.style-card').forEach(c => c.classList.remove('active'));
@@ -122,9 +129,16 @@ function updateGenCounter() {
     if (sidebar) sidebar.prepend(el);
   }
   el.innerHTML = remaining > 0
-    ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> ${remaining} free left`
-    : `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Limit reached`;
-  el.style.color = remaining > 10 ? '#16a34a' : remaining > 0 ? '#d97706' : '#dc2626';
+    ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> ' + remaining + ' free left'
+    : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Limit reached';
+  el.style.color = remaining > 10 ? '#16a34a' : remaining > 5 ? '#d97706' : remaining > 0 ? '#ef4444' : '#dc2626';
+  // Show urgency animation when low
+  if (remaining <= 5 && remaining > 0) {
+    el.style.fontWeight = '800';
+    el.style.animation = 'pulse 1.5s ease-in-out infinite';
+  } else {
+    el.style.animation = '';
+  }
 }
 
 function checkLimit(type) {
@@ -139,6 +153,7 @@ function checkLimit(type) {
 }
 
 function showLimitModal(type) {
+  type = String(type).replace(/[^a-z]/gi, "");
   let modal = document.getElementById('limitModal');
   if (!modal) {
     modal = document.createElement('div');
@@ -202,42 +217,65 @@ function generateCoupon() {
   };
 
   ctx.clearRect(0, 0, W, H);
-
-  // Set global font for this render
   window._couponFont = d.font;
 
   switch (currentStyle) {
-    case 'classic':  drawClassic(ctx, W, H, d);  break;
-    case 'modern':   drawModern(ctx, W, H, d);   break;
-    case 'minimal':  drawMinimal(ctx, W, H, d);  break;
-    case 'luxury':   drawLuxury(ctx, W, H, d);   break;
-    case 'festival': drawFestival(ctx, W, H, d); break;
-    case 'neon':     drawNeon(ctx, W, H, d);     break;
-    case 'saree':    drawSaree(ctx, W, H, d);    break;
-    case 'grocery':  drawGrocery(ctx, W, H, d);  break;
-    case 'vegetable':drawVegetable(ctx, W, H, d);break;
-    case 'fruit':    drawFruit(ctx, W, H, d);    break;
-    case 'homefood': drawHomefood(ctx, W, H, d); break;
-    case 'dairy':    drawDairy(ctx, W, H, d);    break;
-    case 'driedveg': drawDriedveg(ctx, W, H, d); break;
-    case 'nuts':     drawNuts(ctx, W, H, d);     break;
-    case 'herbal':   drawHerbal(ctx, W, H, d);   break;
-    case 'seeds':    drawSeeds(ctx, W, H, d);    break;
+    case 'classic':     drawClassic(ctx, W, H, d);     break;
+    case 'modern':      drawModern(ctx, W, H, d);      break;
+    case 'minimal':     drawMinimal(ctx, W, H, d);     break;
+    case 'luxury':      drawLuxury(ctx, W, H, d);      break;
+    case 'festival':    drawFestival(ctx, W, H, d);    break;
+    case 'neon':        drawNeon(ctx, W, H, d);        break;
+    case 'saree':       drawSaree(ctx, W, H, d);       break;
+    case 'grocery':     drawGrocery(ctx, W, H, d);     break;
+    case 'vegetable':   drawVegetable(ctx, W, H, d);   break;
+    case 'fruit':       drawFruit(ctx, W, H, d);       break;
+    case 'homefood':    drawHomefood(ctx, W, H, d);    break;
+    case 'dairy':       drawDairy(ctx, W, H, d);       break;
+    case 'driedveg':    drawDriedveg(ctx, W, H, d);    break;
+    case 'nuts':        drawNuts(ctx, W, H, d);        break;
+    case 'herbal':      drawHerbal(ctx, W, H, d);      break;
+    case 'seeds':       drawSeeds(ctx, W, H, d);       break;
+    case 'wedding':     drawWedding(ctx, W, H, d);     break;
+    case 'bakery':      drawBakery(ctx, W, H, d);      break;
+    case 'pharmacy':    drawPharmacy(ctx, W, H, d);    break;
+    case 'electronics': drawElectronics(ctx, W, H, d); break;
   }
+  // Apply border, watermark, product image on top of every style
+  drawExtras(ctx, W, H, d);
 }
 
 // ── STYLE 1 — CLASSIC ────────────────────────────────────────────
 // ── DRAW EXTRAS (border, watermark, product image) ─────────────────────────
 function drawExtras(ctx, W, H, d) {
-  // Product image (right side)
+  // Product image — circular, placed directly above the brand logo circle
   if (d.productImg) {
-    const pw = Math.floor(W * 0.18), ph = Math.floor(W * 0.18);
-    const px = W - pw - 20, py = H / 2 - ph / 2;
+    const cr  = 46; // same radius reference as drawBadgeAndLogo
+    const logoCx = W - cr - 16;
+    const logoCy = H - cr - 16;
+    const pr  = Math.floor(Math.min(W * 0.10, H * 0.22)); // product image radius
+    const pcx = logoCx;                    // same horizontal center as logo
+    const pcy = logoCy - cr - 10 - pr;    // sits just above the logo circle
     ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    // White ring border (matches logo style)
+    ctx.shadowColor = 'rgba(0,0,0,0.35)';
     ctx.shadowBlur  = 12;
-    rr(ctx, px, py, pw, ph, 10); ctx.clip();
-    ctx.drawImage(d.productImg, px, py, pw, ph);
+    ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+    ctx.lineWidth   = 3;
+    ctx.beginPath();
+    ctx.arc(pcx, pcy, pr + 3, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    // White fill behind image
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(pcx, pcy, pr, 0, Math.PI * 2);
+    ctx.fill();
+    // Clip to circle and draw image
+    ctx.beginPath();
+    ctx.arc(pcx, pcy, pr - 1, 0, Math.PI * 2);
+    ctx.clip();
+    try { ctx.drawImage(d.productImg, pcx - pr + 1, pcy - pr + 1, (pr - 1) * 2, (pr - 1) * 2); } catch(e){}
     ctx.restore();
   }
   // Border
@@ -698,6 +736,8 @@ function drawLuxury(ctx, W, H, d) {
     ctx.textAlign = 'center';
     ctx.fillText('🔗 ' + d.link, W / 2, 280);
   }
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
 
   drawBadgeAndLogo(ctx, W, H);
 }
@@ -1523,6 +1563,260 @@ function drawSeeds(ctx, W, H, d) {
   drawBadgeAndLogo(ctx, W, H);
 }
 
+// ── STYLE 17 — WEDDING ───────────────────────────────────────────────────────
+function drawWedding(ctx, W, H, d) {
+  // Soft pink-gold gradient
+  const g = ctx.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, '#fce4ec'); g.addColorStop(0.5, '#fff8f0'); g.addColorStop(1, '#fce4ec');
+  ctx.fillStyle = g;
+  rr(ctx, 0, 0, W, H, 18); ctx.fill();
+
+  // Gold border
+  const gb = ctx.createLinearGradient(0, 0, W, H);
+  gb.addColorStop(0, '#d4a017'); gb.addColorStop(0.5, '#f5d76e'); gb.addColorStop(1, '#d4a017');
+  ctx.strokeStyle = gb; ctx.lineWidth = 2.5;
+  rr(ctx, 3, 3, W-6, H-6, 16); ctx.stroke();
+
+  // Inner border
+  ctx.strokeStyle = 'rgba(212,160,23,0.3)'; ctx.lineWidth = 1;
+  rr(ctx, 9, 9, W-18, H-18, 13); ctx.stroke();
+
+  // Floral corner decorations
+  ctx.save(); ctx.globalAlpha = 0.18; ctx.fillStyle = '#e91e8c';
+  [[18,18],[W-18,18],[18,H-18],[W-18,H-18]].forEach(([x,y]) => {
+    ctx.beginPath(); ctx.arc(x, y, 14, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x+8, y, 8, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x-8, y, 8, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y+8, 8, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y-8, 8, 0, Math.PI*2); ctx.fill();
+  });
+  ctx.globalAlpha = 1; ctx.restore();
+
+  // Logo
+  const _wl = getActiveLogo();
+  if (_wl) {
+    const ls = 34; ctx.save();
+    ctx.beginPath(); ctx.arc(W/2, 32, ls/2, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(212,160,23,0.15)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(W/2, 32, ls/2, 0, Math.PI*2); ctx.clip();
+    try { ctx.drawImage(_wl, W/2-ls/2, 32-ls/2, ls, ls); } catch(e){}
+    ctx.restore();
+  }
+
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 28px Georgia, serif'; ctx.fillStyle = '#880e4f';
+  ctx.fillText(d.title, W/2, 76);
+  ctx.font = '500 13px Georgia, serif'; ctx.fillStyle = '#ad1457';
+  ctx.fillText(d.desc, W/2, 96);
+
+  ctx.font = 'bold 48px Georgia, serif'; ctx.fillStyle = gb;
+  ctx.fillText(d.discount, W/2, 152);
+
+  ctx.strokeStyle = 'rgba(212,160,23,0.4)'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(40, 164); ctx.lineTo(W-40, 164); ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.font = 'bold 20px "Courier New", monospace'; ctx.fillStyle = '#880e4f';
+  ctx.fillText(d.code, W/2, 196);
+  ctx.font = '600 10px Georgia, serif'; ctx.fillStyle = 'rgba(136,14,79,0.5)';
+  ctx.fillText('USE THIS CODE', W/2, 212);
+
+  if (d.expiry) { ctx.font = '500 11px Georgia, serif'; ctx.fillStyle = '#ad1457'; ctx.fillText('Valid until: ' + fmtDate(d.expiry), W/2, 234); }
+  if (d.terms)  { ctx.font = '10px Georgia, serif'; ctx.fillStyle = 'rgba(136,14,79,0.4)'; ctx.fillText(d.terms, W/2, 252); }
+  if (d.link)   { ctx.font = '600 11px Georgia, serif'; ctx.fillStyle = '#d4a017'; ctx.fillText('🔗 ' + d.link, W/2, 270); }
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+
+  drawBadgeAndLogo(ctx, W, H, true);
+}
+
+// ── STYLE 18 — BAKERY ─────────────────────────────────────────────────────────
+function drawBakery(ctx, W, H, d) {
+  // Warm cream bg
+  ctx.fillStyle = '#fdf6ec';
+  rr(ctx, 0, 0, W, H, 18); ctx.fill();
+
+  // Brown top band
+  const g = ctx.createLinearGradient(0, 0, W, 85);
+  g.addColorStop(0, '#5d4037'); g.addColorStop(1, d.bg || '#8d6e63');
+  ctx.fillStyle = g;
+  rr(ctx, 0, 0, W, 85, 18, 'top'); ctx.fill();
+
+  // Wavy bottom of band
+  ctx.save(); ctx.fillStyle = '#fdf6ec';
+  ctx.beginPath(); ctx.moveTo(0, 78);
+  for (let x = 0; x <= W; x += 30) ctx.quadraticCurveTo(x+15, 68, x+30, 78);
+  ctx.lineTo(W, 0); ctx.lineTo(0, 0); ctx.closePath(); ctx.fill();
+  ctx.restore();
+
+  // Bread/wheat icon
+  ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.ellipse(W-45, 42, 22, 14, Math.PI/6, 0, Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(W-45, 28); ctx.lineTo(W-45, 56); ctx.stroke();
+  ctx.restore();
+
+  // Logo
+  const _bl = getActiveLogo();
+  if (_bl) {
+    const ls = 32; ctx.save();
+    ctx.beginPath(); ctx.arc(30, 30, ls/2, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(30, 30, ls/2, 0, Math.PI*2); ctx.clip();
+    try { ctx.drawImage(_bl, 30-ls/2, 30-ls/2, ls, ls); } catch(e){}
+    ctx.restore();
+  }
+
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.font = 'bold 48px Georgia, serif'; ctx.fillStyle = '#5d4037';
+  ctx.fillText(d.discount, 24, 130);
+  ctx.font = 'bold 20px Georgia, serif'; ctx.fillStyle = '#4e342e';
+  ctx.fillText(d.title, 24, 158);
+  ctx.font = '500 13px Georgia, serif'; ctx.fillStyle = '#795548';
+  ctx.fillText(d.desc, 24, 178);
+  if (d.minPur) { ctx.font = '600 12px Georgia, serif'; ctx.fillStyle = '#8d6e63'; ctx.fillText('Min: ' + d.minPur, 24, 196); }
+
+  ctx.strokeStyle = '#d7ccc8'; ctx.lineWidth = 1; ctx.setLineDash([5,4]);
+  ctx.beginPath(); ctx.moveTo(24, 208); ctx.lineTo(W-24, 208); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#d7ccc8'; circ(ctx, 24, 208, 8); circ(ctx, W-24, 208, 8);
+
+  ctx.font = 'bold 22px "Courier New", monospace'; ctx.fillStyle = '#5d4037';
+  ctx.fillText(d.code, 24, 240);
+  ctx.font = '600 11px Georgia, serif'; ctx.fillStyle = '#a1887f';
+  ctx.fillText('USE CODE AT CHECKOUT', 24, 258);
+
+  if (d.expiry) { ctx.font = '500 11px Georgia, serif'; ctx.fillStyle = '#a1887f'; ctx.fillText('Valid until: ' + fmtDate(d.expiry), 24, 276); }
+  if (d.terms)  { ctx.font = '10px Georgia, serif'; ctx.fillStyle = '#bcaaa4'; ctx.textAlign = 'right'; ctx.fillText(d.terms, W-24, 276); ctx.textAlign = 'left'; }
+  if (d.link)   { ctx.font = '600 11px Georgia, serif'; ctx.fillStyle = '#5d4037'; ctx.fillText('🔗 ' + d.link, 24, 292); }
+
+  drawBadgeAndLogo(ctx, W, H, true);
+}
+
+// ── STYLE 19 — PHARMACY ───────────────────────────────────────────────────────
+function drawPharmacy(ctx, W, H, d) {
+  ctx.fillStyle = '#e8f5e9';
+  rr(ctx, 0, 0, W, H, 18); ctx.fill();
+
+  // Clean blue-green top band
+  const g = ctx.createLinearGradient(0, 0, W, 80);
+  g.addColorStop(0, '#00695c'); g.addColorStop(1, d.bg || '#00897b');
+  ctx.fillStyle = g;
+  rr(ctx, 0, 0, W, 80, 18, 'top'); ctx.fill();
+
+  // Cross icon (pharmacy)
+  ctx.save(); ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.fillRect(W-58, 18, 16, 44); ctx.fillRect(W-70, 30, 40, 16);
+  ctx.restore();
+
+  // Logo
+  const _pl = getActiveLogo();
+  if (_pl) {
+    const ls = 32; ctx.save();
+    ctx.beginPath(); ctx.arc(30, 30, ls/2, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(30, 30, ls/2, 0, Math.PI*2); ctx.clip();
+    try { ctx.drawImage(_pl, 30-ls/2, 30-ls/2, ls, ls); } catch(e){}
+    ctx.restore();
+  }
+
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.font = 'bold 48px Inter, Segoe UI'; ctx.fillStyle = '#00695c';
+  ctx.fillText(d.discount, 24, 128);
+  ctx.font = 'bold 20px Inter, Segoe UI'; ctx.fillStyle = '#004d40';
+  ctx.fillText(d.title, 24, 156);
+  ctx.font = '500 13px Inter, Segoe UI'; ctx.fillStyle = '#546e7a';
+  ctx.fillText(d.desc, 24, 176);
+  if (d.minPur) { ctx.font = '600 12px Inter, Segoe UI'; ctx.fillStyle = '#00897b'; ctx.fillText('Min: ' + d.minPur, 24, 194); }
+
+  ctx.strokeStyle = '#b2dfdb'; ctx.lineWidth = 1; ctx.setLineDash([5,4]);
+  ctx.beginPath(); ctx.moveTo(24, 206); ctx.lineTo(W-24, 206); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#b2dfdb'; circ(ctx, 24, 206, 8); circ(ctx, W-24, 206, 8);
+
+  ctx.font = 'bold 22px "Courier New", monospace'; ctx.fillStyle = '#00695c';
+  ctx.fillText(d.code, 24, 238);
+  ctx.font = '600 11px Inter, Segoe UI'; ctx.fillStyle = '#80cbc4';
+  ctx.fillText('USE CODE AT CHECKOUT', 24, 256);
+
+  if (d.expiry) { ctx.font = '500 11px Inter, Segoe UI'; ctx.fillStyle = '#80cbc4'; ctx.fillText('Valid until: ' + fmtDate(d.expiry), 24, 274); }
+  if (d.terms)  { ctx.font = '10px Inter, Segoe UI'; ctx.fillStyle = '#b2dfdb'; ctx.textAlign = 'right'; ctx.fillText(d.terms, W-24, 274); ctx.textAlign = 'left'; }
+  if (d.link)   { ctx.font = '600 11px Inter, Segoe UI'; ctx.fillStyle = '#00695c'; ctx.fillText('🔗 ' + d.link, 24, 290); }
+
+  drawBadgeAndLogo(ctx, W, H, true);
+}
+
+// ── STYLE 20 — ELECTRONICS ────────────────────────────────────────────────────
+function drawElectronics(ctx, W, H, d) {
+  ctx.fillStyle = '#0a0a1a';
+  rr(ctx, 0, 0, W, H, 18); ctx.fill();
+
+  // Circuit board pattern
+  ctx.save(); ctx.strokeStyle = 'rgba(0,229,255,0.08)'; ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+  // circuit nodes
+  [[80,40],[200,80],[360,40],[480,80],[160,H-40],[320,H-60],[520,H-40]].forEach(([x,y]) => {
+    ctx.fillStyle = 'rgba(0,229,255,0.15)';
+    ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fill();
+  });
+  ctx.restore();
+
+  // Cyan glow border
+  ctx.save(); ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 18;
+  ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 1.5;
+  rr(ctx, 3, 3, W-6, H-6, 16); ctx.stroke();
+  ctx.restore();
+
+  // Logo
+  const _el = getActiveLogo();
+  if (_el) {
+    const ls = 32; ctx.save();
+    ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.arc(W-30, 28, ls/2, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(0,229,255,0.1)'; ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.beginPath(); ctx.arc(W-30, 28, ls/2, 0, Math.PI*2); ctx.clip();
+    try { ctx.drawImage(_el, W-30-ls/2, 28-ls/2, ls, ls); } catch(e){}
+    ctx.restore();
+  }
+
+  ctx.save(); ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 20;
+  ctx.font = 'bold 58px Inter, Segoe UI'; ctx.fillStyle = '#00e5ff';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText(d.discount, 24, 108);
+  ctx.restore();
+
+  ctx.save(); ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 8;
+  ctx.font = 'bold 20px Inter, Segoe UI'; ctx.fillStyle = '#e0f7fa';
+  ctx.fillText(d.title, 24, 138);
+  ctx.restore();
+
+  ctx.font = '500 13px Inter, Segoe UI'; ctx.fillStyle = 'rgba(224,247,250,0.6)';
+  ctx.fillText(d.desc, 24, 158);
+  if (d.minPur) { ctx.font = '600 12px Inter, Segoe UI'; ctx.fillStyle = 'rgba(0,229,255,0.6)'; ctx.fillText('Min: ' + d.minPur, 24, 176); }
+
+  ctx.save(); ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 12;
+  ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 1.5;
+  rr(ctx, 24, 188, 220, 40, 6); ctx.stroke();
+  ctx.restore();
+
+  ctx.save(); ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 8;
+  ctx.font = 'bold 20px "Courier New", monospace'; ctx.fillStyle = '#00e5ff';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(d.code, 134, 208);
+  ctx.restore();
+  ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+
+  ctx.font = '600 10px Inter, Segoe UI'; ctx.fillStyle = 'rgba(0,229,255,0.4)';
+  ctx.fillText('COUPON CODE', 24, 242);
+
+  if (d.expiry) { ctx.font = '500 11px Inter, Segoe UI'; ctx.fillStyle = 'rgba(224,247,250,0.4)'; ctx.fillText('Valid until: ' + fmtDate(d.expiry), 24, 258); }
+  if (d.terms)  { ctx.font = '10px Inter, Segoe UI'; ctx.fillStyle = 'rgba(0,229,255,0.25)'; ctx.fillText(d.terms, 24, 274); }
+  if (d.link)   { ctx.font = '600 11px Inter, Segoe UI'; ctx.fillStyle = '#00e5ff'; ctx.fillText('🔗 ' + d.link, 24, 290); }
+
+  drawBadgeAndLogo(ctx, W, H);
+}
+
 // ═══════════════════════════════════════════════════════════════
 //  PART B — BADGE · LOGO · DOWNLOAD · WHATSAPP SHARE
 // ═══════════════════════════════════════════════════════════════
@@ -1635,6 +1929,7 @@ function drawBadgeAndLogo(ctx, W, H, lightBg = false) {
 // ── DOWNLOAD COUPON (8K quality) ─────────────────────────────────
 function downloadCoupon() {
   const canvas = document.getElementById('couponCanvas');
+  if (!canvas || canvas.width === 0 || canvas.height === 0) return;
   const code   = document.getElementById('couponCode').value || 'coupon';
   const scale  = 8; // 8K: 600*8=4800 x 300*8=2400
   const hq     = document.createElement('canvas');
@@ -1796,7 +2091,7 @@ function showShareModal(dataUrl, msg, blob, code) {
           <span class="wsm-num">3</span>
           <div>
             <strong>Open WhatsApp &rarr; attach image &rarr; paste message &rarr; Send</strong>
-            <button class="wsm-btn-copy" style="margin-top:8px" onclick="window.open('https://web.whatsapp.com/','_blank')">
+            <button class="wsm-btn-copy" style="margin-top:8px" onclick="window.open('https://web.whatsapp.com/','_blank','noopener,noreferrer')">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
               Open WhatsApp Web
             </button>
@@ -1806,7 +2101,7 @@ function showShareModal(dataUrl, msg, blob, code) {
 
       <div class="wsm-preview">
         ${imgTag}
-        <pre id="wsmMsgText">${msg}</pre>
+        <pre id="wsmMsgText"></pre>
       </div>
 
       <button class="wsm-close" onclick="document.getElementById('waShareModal').remove()">
@@ -1817,6 +2112,7 @@ function showShareModal(dataUrl, msg, blob, code) {
   `;
 
   document.body.appendChild(modal);
+  const _pre = modal.querySelector('#wsmMsgText'); if (_pre) _pre.textContent = msg;
 }
 
 // ── COPY MESSAGE ONLY ─────────────────────────────────────────────
@@ -1846,60 +2142,82 @@ async function wsmCopyMsg() {
 // ═══════════════════════════════════════════════════════════════
 
 // ── BARCODE GENERATOR ────────────────────────────────────────────
-function generateBarcode() {
-  if (!checkLimit('barcode')) return;
-  const value   = document.getElementById('barcodeValue').value.trim() || '123456789012';
-  const format  = document.getElementById('barcodeFormat').value;
-  const width   = parseFloat(document.getElementById('barcodeWidth').value);
-  const height  = parseInt(document.getElementById('barcodeHeight').value);
-  const color   = document.getElementById('barcodeColor').value;
-  const bgCol   = document.getElementById('barcodeBg').value;
-  const showTxt = document.getElementById('barcodeShowText').checked;
-  const fontSize= parseInt(document.getElementById('barcodeFont').value);
-  const label   = document.getElementById('barcodeLabel').value;
 
-  try {
-    JsBarcode('#barcodesvg', value, {
-      format,
-      width,
-      height,
-      lineColor  : color,
-      background : bgCol,
-      displayValue: showTxt,
-      fontSize,
-      fontOptions: 'bold',
-      font       : 'Inter, Segoe UI, sans-serif',
-      margin     : 18,
-      marginTop  : 14,
-      marginBottom: 14,
-    });
-    document.getElementById('barcodeLabelText').textContent = label;
-  } catch (e) {
-    document.getElementById('barcodeLabelText').textContent = '⚠ Invalid value for selected format. Try CODE128.';
-  }
+// €€ BARCODE / QR FRAME PICKERS €€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€
+let _barcodeTimer = null;
+function generateBarcodePreview() {
+  clearTimeout(_barcodeTimer);
+  _barcodeTimer = setTimeout(generateBarcode, 300);
+}
+let _qrPreviewTimer = null;
+function generateQRPreview() {
+  clearTimeout(_qrPreviewTimer);
+  _qrPreviewTimer = setTimeout(generateQR, 300);
 }
 
-// ── BARCODE DOWNLOAD PNG ──────────────────────────────────────────
-function downloadBarcode() {
-  const svg  = document.getElementById('barcodesvg');
+function generateBarcode() {
+  if (!checkLimit('barcode')) return;
+  const value      = document.getElementById('barcodeValue').value.trim() || '123456789012';
+  const format     = document.getElementById('barcodeFormat').value;
+  const barWidth   = parseFloat(document.getElementById('barcodeWidth').value);
+  const barHeight  = parseInt(document.getElementById('barcodeHeight').value);
+  const color      = document.getElementById('barcodeColor').value;
+  const bgCol      = document.getElementById('barcodeBg').value;
+  const showTxt    = document.getElementById('barcodeShowText').checked;
+  const fontSize   = parseInt(document.getElementById('barcodeFont').value);
+  const label      = document.getElementById('barcodeLabel').value;
+  const brand      = (document.getElementById('barcodeBrand') || {}).value || '';
+  const price      = (document.getElementById('barcodePrice') || {}).value || '';
+  const margin     = parseInt((document.getElementById('barcodeMargin') || {value:'18'}).value);
+  const frameColor = (document.getElementById('barcodeFrameColor') || {value:'#6366f1'}).value;
+  const textColor  = (document.getElementById('barcodeTextColor') || {value:'#1e1b4b'}).value;
+
+  const svg = document.getElementById('barcodesvg');
+  try {
+    JsBarcode(svg, value, {
+      format, width: barWidth, height: barHeight,
+      lineColor: color, background: bgCol,
+      displayValue: showTxt, fontSize, fontOptions: 'bold',
+      font: 'Inter, Segoe UI, sans-serif',
+      margin, marginTop: margin, marginBottom: margin,
+    });
+  } catch (e) {
+    document.getElementById('barcodeLabelText').textContent = 'Invalid value for selected format. Try CODE128.';
+    return;
+  }
+  document.getElementById('barcodeLabelText').textContent = '';
+
   const xml  = new XMLSerializer().serializeToString(svg);
   const blob = new Blob([xml], { type: 'image/svg+xml' });
   const url  = URL.createObjectURL(blob);
   const img  = new Image();
-
   img.onload = () => {
-    const canvas = document.createElement('canvas');
-    canvas.width  = img.width  || svg.getBoundingClientRect().width  || 400;
-    canvas.height = img.height || svg.getBoundingClientRect().height || 200;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0);
-    const a      = document.createElement('a');
-    a.download   = `rathna-barcode-${document.getElementById('barcodeValue').value}.png`;
-    a.href       = canvas.toDataURL('image/png');
-    a.click();
+    if (typeof drawBarcodeFrame === 'function') {
+      drawBarcodeFrame(img, { label, brand, price, frameColor, textColor, bgCol });
+    }
     URL.revokeObjectURL(url);
   };
   img.src = url;
+}
+
+// ── BARCODE DOWNLOAD PNG ──────────────────────────────────────────
+function downloadBarcode() {
+  const canvas = document.getElementById('barcodeCanvas');
+  if (!canvas || canvas.width === 0 || canvas.style.display === 'none') return;
+  const a = document.createElement('a');
+  a.download = 'rathna-barcode-' + document.getElementById('barcodeValue').value + '.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+
+
+function downloadBarcodeJPG() {
+  const canvas = document.getElementById('barcodeCanvas');
+  if (!canvas || canvas.style.display === 'none') return;
+  const a = document.createElement('a');
+  a.download = `rathna-barcode-${document.getElementById('barcodeValue').value}.jpg`;
+  a.href = canvas.toDataURL('image/jpeg', 0.95);
+  a.click();
 }
 
 // ── BARCODE DOWNLOAD SVG ──────────────────────────────────────────
@@ -1919,67 +2237,155 @@ function updateBarcodeHeightLabel(v) { document.getElementById('barcodeHeightLab
 function updateBarcodeFontLabel(v)   { document.getElementById('barcodeFontLabel').textContent   = v; }
 
 // ── QR CODE GENERATOR ────────────────────────────────────────────
+// ── QR LOGO UPLOAD ───────────────────────────────────────────────────────────────
+function handleQrLogoUpload(input) {
+  if (!isPremium()) { openPremium(); input.value = ''; return; }
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      window.qrLogo = img;
+      document.getElementById('qrLogoName').textContent = file.name;
+      generateQR();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetQrLogo() {
+  window.qrLogo = null;
+  document.getElementById('qrLogoInput').value = '';
+  document.getElementById('qrLogoName').textContent = 'No logo';
+  generateQR();
+}
+
+function overlayQrLogo(size) {
+  if (!window.qrLogo) return;
+  const container = document.getElementById('qrcode-output');
+  const canvas = container.querySelector('canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const ls  = Math.floor(size * 0.22);
+  const lx  = (size - ls) / 2;
+  const ly  = (size - ls) / 2;
+  const r   = ls * 0.18;
+  ctx.save();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(size / 2, size / 2, ls / 2 + 6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(lx + r, ly);
+  ctx.lineTo(lx + ls - r, ly); ctx.quadraticCurveTo(lx + ls, ly, lx + ls, ly + r);
+  ctx.lineTo(lx + ls, ly + ls - r); ctx.quadraticCurveTo(lx + ls, ly + ls, lx + ls - r, ly + ls);
+  ctx.lineTo(lx + r, ly + ls); ctx.quadraticCurveTo(lx, ly + ls, lx, ly + ls - r);
+  ctx.lineTo(lx, ly + r); ctx.quadraticCurveTo(lx, ly, lx + r, ly);
+  ctx.closePath(); ctx.clip();
+  ctx.drawImage(window.qrLogo, lx, ly, ls, ls);
+  ctx.restore();
+}
+
 let _qrInstance = null;
 
 function generateQR() {
   if (!checkLimit('qr')) return;
-  const type  = document.getElementById('qrType').value;
-  const raw   = document.getElementById('qrValue').value.trim();
-  const size  = parseInt(document.getElementById('qrSize').value);
-  const dark  = document.getElementById('qrDark').value;
-  const light = document.getElementById('qrLight').value;
-  const label = document.getElementById('qrLabel').value;
-  const ecc   = document.getElementById('qrEcc').value;
+  const type       = document.getElementById('qrType').value;
+  const raw        = document.getElementById('qrValue').value.trim();
+  const size       = parseInt(document.getElementById('qrSize').value);
+  const dark       = document.getElementById('qrDark').value;
+  const light      = document.getElementById('qrLight').value;
+  const label      = document.getElementById('qrLabel').value;
+  const ecc        = document.getElementById('qrEcc').value;
+  const frameColor = (document.getElementById('qrFrameColor') || {value:'#6366f1'}).value;
+  const frameTxtC  = (document.getElementById('qrFrameTextColor') || {value:'#ffffff'}).value;
+  const frameLabel = (document.getElementById('qrFrameLabel') || {value:'SCAN ME'}).value;
+  const centerIcon = (document.getElementById('qrCenterIcon') || {value:'none'}).value;
+  const qrMargin   = parseInt((document.getElementById('qrMargin') || {value:'10'}).value);
 
-  // Build final QR content based on type
-  let content = raw;
-  if (raw) {
-    switch (type) {
-      case 'phone':     content = `tel:${raw}`;                          break;
-      case 'email':     content = `mailto:${raw}`;                       break;
-      case 'whatsapp':  content = `https://wa.me/${raw.replace(/\D/g,'')}`; break;
-      case 'upi':       content = `upi://pay?pa=${raw}&pn=RATHNA+Products`; break;
-      default:          content = raw;
+  const _g = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  let content = '';
+  switch (type) {
+    case 'url': case 'text': content = raw || 'https://www.rathnaproducts.store'; break;
+    case 'phone':    content = 'tel:' + raw; break;
+    case 'email':    content = 'mailto:' + raw; break;
+    case 'whatsapp': content = 'https://wa.me/' + raw.replace(/\D/g,''); break;
+    case 'upi':      content = 'upi://pay?pa=' + raw + '&pn=RATHNA+Products'; break;
+    case 'sms': {
+      var _sp = _g('qrSmsPhone').replace(/\D/g,''), _sm = _g('qrSmsMsg');
+      content = 'sms:' + _sp + (_sm ? '?body=' + encodeURIComponent(_sm) : ''); break;
     }
+    case 'wifi': {
+      var _ws = _g('qrWifiSsid'), _wp = _g('qrWifiPass'), _wt = _g('qrWifiSec') || 'WPA';
+      content = 'WIFI:T:' + _wt + ';S:' + _ws + ';P:' + _wp + ';;'; break;
+    }
+    case 'vcard': {
+      var _vn=_g('qrVcardName'),_vp=_g('qrVcardPhone'),_ve=_g('qrVcardEmail'),_vo=_g('qrVcardOrg'),_vu=_g('qrVcardUrl'),_va=_g('qrVcardAddr');
+      content = 'BEGIN:VCARD\nVERSION:3.0\n'+(_vn?'FN:'+_vn+'\n':'')+(_vp?'TEL:'+_vp+'\n':'')+(_ve?'EMAIL:'+_ve+'\n':'')+(_vo?'ORG:'+_vo+'\n':'')+(_vu?'URL:'+_vu+'\n':'')+(_va?'ADR:;;'+_va+';;;;\n':'')+'END:VCARD'; break;
+    }
+    case 'location': {
+      var _lat=_g('qrLat')||'13.0827',_lng=_g('qrLng')||'80.2707',_ln=_g('qrLocName');
+      content = 'geo:'+_lat+','+_lng+(_ln?'?q='+encodeURIComponent(_ln):''); break;
+    }
+    case 'instagram': case 'facebook': case 'youtube': content = _g('qrSocialUrl') || raw; break;
+    case 'multiurl': {
+      if (!isPremium()) { openPremium(); return; }
+      var _mu = document.getElementById('qrMultiUrls'), _urls = _mu ? _mu.value.split('\n').map(function(u){return u.trim();}).filter(Boolean) : [];
+      content = _urls.length > 1 ? _urls.join('\n') : (_urls[0] || 'https://www.rathnaproducts.store'); break;
+    }
+    default: content = raw || 'https://www.rathnaproducts.store';
   }
+  if (!content) content = 'https://www.rathnaproducts.store';
 
   const eccMap = { L: QRCode.CorrectLevel.L, M: QRCode.CorrectLevel.M, Q: QRCode.CorrectLevel.Q, H: QRCode.CorrectLevel.H };
-
   const container = document.getElementById('qrcode-output');
   container.innerHTML = '';
 
   try {
     _qrInstance = new QRCode(container, {
-      text        : content || 'https://www.rathnaproducts.store',
-      width       : size,
-      height      : size,
-      colorDark   : dark,
-      colorLight  : light,
+      text: content || 'https://www.rathnaproducts.store',
+      width: size, height: size,
+      colorDark: dark, colorLight: light,
       correctLevel: eccMap[ecc] || QRCode.CorrectLevel.M,
     });
   } catch (e) {
-    container.innerHTML = '<p style="color:#ef4444;font-size:0.85rem">⚠ Could not generate QR. Check your input.</p>';
+    document.getElementById('qrLabelText').textContent = 'Could not generate QR. Check your input.';
+    return;
   }
+  document.getElementById('qrLabelText').textContent = '';
 
-  document.getElementById('qrLabelText').textContent = label;
+  setTimeout(function() {
+    const qrCanvas = container.querySelector('canvas');
+    if (!qrCanvas) return;
+    if (window.qrLogo) overlayQrLogo(size);
+    if (centerIcon === 'scanme' && typeof drawQrScanMeIcon === 'function') drawQrScanMeIcon(qrCanvas, size);
+    if (typeof drawQrFrame === 'function') {
+      drawQrFrame(qrCanvas, { size, frameColor, frameTxtC, frameLabel, label, centerIcon, qrMargin });
+    }
+  }, 60);
 }
 
 // ── QR TYPE PLACEHOLDER ───────────────────────────────────────────
 function updateQrPlaceholder() {
-  const type  = document.getElementById('qrType').value;
-  const input = document.getElementById('qrValue');
-  const lbl   = document.getElementById('qrValueLabel');
-  const map   = {
-    url      : ['URL',             'https://www.rathnaproducts.store'],
-    text     : ['Text',            'Enter any text here'],
-    phone    : ['Phone Number',    '+91 98765 43210'],
-    email    : ['Email Address',   'hello@rathnaproducts.store'],
-    whatsapp : ['WhatsApp Number', '919876543210'],
-    upi      : ['UPI ID',          'rathna@upi'],
-  };
-  lbl.textContent    = map[type][0];
-  input.placeholder  = map[type][1];
-  input.value        = '';
+  var _type = document.getElementById('qrType').value;
+  ['qrFieldUrl','qrFieldSms','qrFieldWifi','qrFieldVcard','qrFieldLocation','qrFieldSocial','qrFieldMultiurl'].forEach(function(id){
+    var el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  var _simpleMap = {url:['URL','https://www.rathnaproducts.store'],text:['Text','Enter any text here'],phone:['Phone Number','+91 98765 43210'],email:['Email Address','hello@rathnaproducts.store'],whatsapp:['WhatsApp Number','919876543210'],upi:['UPI ID','rathna@upi']};
+  var _socialMap = {instagram:['Instagram URL','https://instagram.com/yourprofile'],facebook:['Facebook URL','https://facebook.com/yourpage'],youtube:['YouTube URL','https://youtube.com/yourchannel']};
+  if (_simpleMap[_type]) {
+    var _f=document.getElementById('qrFieldUrl'); if(_f) _f.style.display='';
+    var _l=document.getElementById('qrValueLabel'),_i=document.getElementById('qrValue');
+    if(_l) _l.textContent=_simpleMap[_type][0]; if(_i){_i.placeholder=_simpleMap[_type][1];_i.value='';}
+  } else if (_socialMap[_type]) {
+    var _sf=document.getElementById('qrFieldSocial'); if(_sf) _sf.style.display='';
+    var _sl=document.getElementById('qrSocialLabel'),_si=document.getElementById('qrSocialUrl');
+    if(_sl) _sl.textContent=_socialMap[_type][0]; if(_si){_si.placeholder=_socialMap[_type][1];_si.value='';}
+  } else {
+    var _ff=document.getElementById('qrField'+_type.charAt(0).toUpperCase()+_type.slice(1)); if(_ff) _ff.style.display='';
+  }
 }
 
 // ── QR SIZE LABEL ─────────────────────────────────────────────────
@@ -1987,20 +2393,33 @@ function updateQrSizeLabel(v) { document.getElementById('qrSizeLabel').textConte
 
 // ── QR DOWNLOAD ───────────────────────────────────────────────────
 function downloadQR() {
-  // QRCode.js renders a canvas (modern) or img (fallback)
-  const canvas = document.querySelector('#qrcode-output canvas');
-  const img    = document.querySelector('#qrcode-output img');
-  const a      = document.createElement('a');
-  a.download   = 'rathna-qrcode.png';
-
-  if (canvas) {
-    a.href = canvas.toDataURL('image/png');
-  } else if (img) {
-    a.href = img.src;
-  } else {
-    return;
-  }
+  const canvas = document.getElementById('qrFrameCanvas') || document.querySelector('#qrcode-output canvas');
+  if (!canvas) return;
+  const a = document.createElement('a');
+  a.download = 'rathna-qrcode.png';
+  a.href = canvas.toDataURL('image/png');
   a.click();
+}
+
+
+function downloadQRJPG() {
+  const canvas = document.getElementById('qrFrameCanvas');
+  if (!canvas) return;
+  const a = document.createElement('a');
+  a.download = 'rathna-qrcode.jpg';
+  a.href = canvas.toDataURL('image/jpeg', 0.95);
+  a.click();
+}
+
+function downloadQRSVG() {
+  const canvas = document.getElementById('qrFrameCanvas');
+  if (!canvas) return;
+  const w = canvas.width, h = canvas.height, d = canvas.toDataURL('image/png');
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'"><image href="'+d+'" width="'+w+'" height="'+h+'"/></svg>';
+  const blob = new Blob([svg], {type:'image/svg+xml'});
+  const a = document.createElement('a');
+  a.download = 'rathna-qrcode.svg'; a.href = URL.createObjectURL(blob); a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2083,10 +2502,22 @@ function closePremium() {
 }
 
 function premGoScreen(n) {
-  [1,2,3,4].forEach(i => {
+  [1,2,3,4,5].forEach(i => {
     const el = document.getElementById('premScreen' + i);
     if (el) el.style.display = i === n ? 'block' : 'none';
   });
+}
+
+function premTncToggle() {
+  const checked = document.getElementById('premTncCheck').checked;
+  const btn = document.getElementById('premSubmitBtn');
+  btn.disabled = !checked;
+  btn.style.opacity = checked ? '1' : '0.5';
+  btn.style.cursor = checked ? 'pointer' : 'not-allowed';
+}
+
+function premShowTnc() {
+  premGoScreen(5);
 }
 
 function premGoCheckout() {
@@ -2116,11 +2547,23 @@ function premRenderQR() {
 }
 
 function premCopyUpi() {
-  navigator.clipboard.writeText(PREM_UPI_ID).then(() => {
-    const btn = document.querySelector('.prem-copy-btn');
-    btn.textContent = '✅ Copied!';
-    setTimeout(() => btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy`, 2000);
-  });
+  const btn = document.querySelector('.prem-copy-btn');
+  const done = () => {
+    if (!btn) return;
+    btn.textContent = '\u2705 Copied!';
+    setTimeout(() => { btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy'; }, 2000);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(PREM_UPI_ID).then(done).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = PREM_UPI_ID; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy'); ta.remove(); done();
+    });
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = PREM_UPI_ID; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); ta.remove(); done();
+  }
 }
 
 function premTxnCheck() {
@@ -2143,8 +2586,8 @@ function premSubmitOrder() {
   if (!/^[6-9]\d{9}$/.test(phone)) { premToast('⚠️ Enter a valid 10-digit phone number.'); return; }
   if (txn.length < 8)               { premToast('⚠️ Please enter a valid Transaction ID.'); return; }
 
-  const btn = document.querySelector('#premScreen2 .prem-btn-buy');
-  btn.disabled = true; btn.textContent = 'Submitting...';
+  const btn = document.getElementById('premSubmitBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Submitting...'; }
 
   const orderId = 'PREM' + Date.now();
   const dateStr = new Date().toLocaleString('en-IN', { dateStyle:'medium', timeStyle:'short' });
@@ -2174,8 +2617,8 @@ function premSubmitOrder() {
 
   document.getElementById('premOrderId').textContent = 'Order ID: ' + orderId;
   premGoScreen(3);
-  btn.disabled = false;
-  setTimeout(() => window.open(`https://wa.me/${PREM_WA_NUM}?text=${msg}`, '_blank'), 600);
+  if (btn) { btn.disabled = false; btn.textContent = 'Submit Order'; }
+  setTimeout(() => window.open('https://wa.me/' + PREM_WA_NUM + '?text=' + msg, '_blank', 'noopener,noreferrer'), 600);
 }
 
 // ── ACTIVATE CODE (verify against Google Sheets) ──────────────────
@@ -2302,3 +2745,549 @@ function premToast(msg) {
 document.getElementById('premiumOverlay').addEventListener('click', function(e) {
   if (e.target === this) closePremium();
 });
+
+// ═══════════════════════════════════════════════════════════════
+//  BATCH GENERATE
+// ═══════════════════════════════════════════════════════════════
+async function batchGenerate() {
+  if (!isPremium()) { openPremium(); return; }
+
+  const raw    = document.getElementById('batchCodes').value.trim();
+  const prefix = document.getElementById('batchPrefix').value.trim();
+  if (!raw) { premToast('⚠️ Enter at least one coupon code.'); return; }
+
+  const codes = raw.split('\n').map(c => c.trim()).filter(Boolean).slice(0, 50);
+  const total = codes.length;
+
+  const progress = document.getElementById('batchProgress');
+  const bar      = document.getElementById('batchBar');
+  const status   = document.getElementById('batchStatus');
+  progress.style.display = 'block';
+
+  const zip    = new JSZip();
+  const canvas = document.getElementById('couponCanvas');
+  const W = canvas.width, H = canvas.height;
+  const scale  = 8;
+
+  // Read current form data once
+  const d = {
+    brand   : document.getElementById('couponBrand').value    || 'RATHNA Products',
+    title   : document.getElementById('couponTitle').value    || 'SPECIAL OFFER',
+    discount: document.getElementById('couponDiscount').value || '30% OFF',
+    expiry  : document.getElementById('couponExpiry').value,
+    desc    : document.getElementById('couponDesc').value     || '',
+    minPur  : document.getElementById('couponMin').value      || '',
+    terms   : document.getElementById('couponTerms').value    || '',
+    link    : document.getElementById('couponLink') ? document.getElementById('couponLink').value || '' : '',
+    bg      : document.getElementById('couponBg').value,
+    textCol : document.getElementById('couponText').value,
+    accent  : document.getElementById('couponAccent').value,
+    font    : document.getElementById('couponFont') ? document.getElementById('couponFont').value : 'Inter, Segoe UI',
+    border  : document.getElementById('couponBorder') ? document.getElementById('couponBorder').value : 'none',
+    watermark: document.getElementById('couponWatermark') ? document.getElementById('couponWatermark').value : '',
+    productImg: window.couponProductImg || null,
+  };
+
+  for (let i = 0; i < total; i++) {
+    const code = prefix + codes[i];
+    const ctx  = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    const dd = Object.assign({}, d, { code });
+
+    switch (currentStyle) {
+      case 'classic':     drawClassic(ctx, W, H, dd);     break;
+      case 'modern':      drawModern(ctx, W, H, dd);      break;
+      case 'minimal':     drawMinimal(ctx, W, H, dd);     break;
+      case 'luxury':      drawLuxury(ctx, W, H, dd);      break;
+      case 'festival':    drawFestival(ctx, W, H, dd);    break;
+      case 'neon':        drawNeon(ctx, W, H, dd);        break;
+      case 'saree':       drawSaree(ctx, W, H, dd);       break;
+      case 'grocery':     drawGrocery(ctx, W, H, dd);     break;
+      case 'vegetable':   drawVegetable(ctx, W, H, dd);   break;
+      case 'fruit':       drawFruit(ctx, W, H, dd);       break;
+      case 'homefood':    drawHomefood(ctx, W, H, dd);    break;
+      case 'dairy':       drawDairy(ctx, W, H, dd);       break;
+      case 'driedveg':    drawDriedveg(ctx, W, H, dd);    break;
+      case 'nuts':        drawNuts(ctx, W, H, dd);        break;
+      case 'herbal':      drawHerbal(ctx, W, H, dd);      break;
+      case 'seeds':       drawSeeds(ctx, W, H, dd);       break;
+      case 'wedding':     drawWedding(ctx, W, H, dd);     break;
+      case 'bakery':      drawBakery(ctx, W, H, dd);      break;
+      case 'pharmacy':    drawPharmacy(ctx, W, H, dd);    break;
+      case 'electronics': drawElectronics(ctx, W, H, dd); break;
+    }
+    drawExtras(ctx, W, H, dd);
+
+    // Scale up to 8K
+    const hq = document.createElement('canvas');
+    hq.width = W * scale; hq.height = H * scale;
+    const hqCtx = hq.getContext('2d');
+    hqCtx.imageSmoothingEnabled = true;
+    hqCtx.imageSmoothingQuality = 'high';
+    hqCtx.scale(scale, scale);
+    hqCtx.drawImage(canvas, 0, 0);
+
+    const blob = await new Promise(res => hq.toBlob(res, 'image/png', 1.0));
+    zip.file("coupon-" + code.replace(/[^a-zA-Z0-9_\-]/g,"_") + ".png", blob);
+
+    const pct = Math.round(((i + 1) / total) * 100);
+    bar.style.width = pct + '%';
+    status.textContent = `Generating ${i + 1} of ${total}...`;
+    await new Promise(r => setTimeout(r, 10)); // yield to UI
+  }
+
+  status.textContent = 'Packing ZIP...';
+  const zipBlob = await zip.generateAsync({ type: 'blob' });
+  const a = document.createElement('a');
+  a.download = 'batch-coupons-' + total + '.zip';
+  a.href = URL.createObjectURL(zipBlob);
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 1000);
+
+  status.textContent = `✅ Done! ${total} coupons downloaded.`;
+  bar.style.width = '100%';
+  setTimeout(() => { progress.style.display = 'none'; bar.style.width = '0%'; }, 3000);
+
+  // Restore canvas without burning free limit
+  const restoreCtx = canvas.getContext('2d');
+  restoreCtx.clearRect(0, 0, W, H);
+  const restoreD = Object.assign({}, d, { code: document.getElementById('couponCode').value || 'SAVE30' });
+  switch (currentStyle) {
+    case 'classic':     drawClassic(restoreCtx, W, H, restoreD);     break;
+    case 'modern':      drawModern(restoreCtx, W, H, restoreD);      break;
+    case 'minimal':     drawMinimal(restoreCtx, W, H, restoreD);     break;
+    case 'luxury':      drawLuxury(restoreCtx, W, H, restoreD);      break;
+    case 'festival':    drawFestival(restoreCtx, W, H, restoreD);    break;
+    case 'neon':        drawNeon(restoreCtx, W, H, restoreD);        break;
+    case 'saree':       drawSaree(restoreCtx, W, H, restoreD);       break;
+    case 'grocery':     drawGrocery(restoreCtx, W, H, restoreD);     break;
+    case 'vegetable':   drawVegetable(restoreCtx, W, H, restoreD);   break;
+    case 'fruit':       drawFruit(restoreCtx, W, H, restoreD);       break;
+    case 'homefood':    drawHomefood(restoreCtx, W, H, restoreD);    break;
+    case 'dairy':       drawDairy(restoreCtx, W, H, restoreD);       break;
+    case 'driedveg':    drawDriedveg(restoreCtx, W, H, restoreD);    break;
+    case 'nuts':        drawNuts(restoreCtx, W, H, restoreD);        break;
+    case 'herbal':      drawHerbal(restoreCtx, W, H, restoreD);      break;
+    case 'seeds':       drawSeeds(restoreCtx, W, H, restoreD);       break;
+    case 'wedding':     drawWedding(restoreCtx, W, H, restoreD);     break;
+    case 'bakery':      drawBakery(restoreCtx, W, H, restoreD);      break;
+    case 'pharmacy':    drawPharmacy(restoreCtx, W, H, restoreD);    break;
+    case 'electronics': drawElectronics(restoreCtx, W, H, restoreD); break;
+  }
+  drawExtras(restoreCtx, W, H, restoreD);
+}
+
+// ===============================================================
+//  BARCODE FRAME RENDERING
+// ===============================================================
+
+let currentBarcodeFrame = 'plain';
+function pickBarcodeFrame(btn) {
+  document.querySelectorAll('#barcode .bc-frame-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentBarcodeFrame = btn.dataset.frame;
+  generateBarcode();
+}
+
+let currentQrFrame = 'plain';
+function pickQrFrame(btn) {
+  document.querySelectorAll('#qrcode .bc-frame-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentQrFrame = btn.dataset.frame;
+  generateQR();
+}
+
+function roundRect(ctx, x, y, w, h, r, mode) {
+  const tl = (!mode || mode==='top'||mode==='left') ? r : 0;
+  const tr = (!mode || mode==='top'||mode==='right') ? r : 0;
+  const br = (!mode || mode==='bottom'||mode==='right') ? r : 0;
+  const bl = (!mode || mode==='bottom'||mode==='left') ? r : 0;
+  ctx.beginPath();
+  ctx.moveTo(x+tl,y);
+  ctx.lineTo(x+w-tr,y); ctx.quadraticCurveTo(x+w,y,x+w,y+tr);
+  ctx.lineTo(x+w,y+h-br); ctx.quadraticCurveTo(x+w,y+h,x+w-br,y+h);
+  ctx.lineTo(x+bl,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-bl);
+  ctx.lineTo(x,y+tl); ctx.quadraticCurveTo(x,y,x+tl,y);
+  ctx.closePath();
+}
+
+function drawBarcodeFrame(barcodeImg, opts) {
+  const frame    = currentBarcodeFrame;
+  const pad      = 20;
+  const topExtra = opts.brand ? 32 : 0;
+  const botExtra = (opts.label ? 24 : 0) + (opts.price && frame !== 'pricetag' ? 28 : 0);
+  const W        = barcodeImg.width  + pad * 2;
+  const H        = barcodeImg.height + pad * 2 + topExtra + botExtra + (frame === 'pricetag' ? 30 : 0);
+
+  const canvas = document.getElementById('barcodeCanvas');
+  canvas.width  = W;
+  canvas.height = H;
+  canvas.style.display = 'block';
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+
+  const fc = opts.frameColor;
+  const tc = opts.textColor;
+  const bg = opts.bgCol;
+
+  if (frame === 'plain') {
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  } else if (frame === 'rounded') {
+    ctx.fillStyle = bg; roundRect(ctx, 0, 0, W, H, 16); ctx.fill();
+    ctx.strokeStyle = fc; ctx.lineWidth = 3;
+    roundRect(ctx, 2, 2, W-4, H-4, 15); ctx.stroke();
+  } else if (frame === 'shadow') {
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.25)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 6;
+    ctx.fillStyle = bg; roundRect(ctx, 4, 4, W-8, H-8, 12); ctx.fill();
+    ctx.restore();
+  } else if (frame === 'card') {
+    ctx.fillStyle = fc; roundRect(ctx, 0, 0, W, H, 14); ctx.fill();
+    ctx.fillStyle = bg; ctx.fillRect(0, 44, W, H - 44);
+    roundRect(ctx, 0, H-14, W, 14, 14, 'bottom'); ctx.fill();
+    ctx.font = 'bold 14px Inter, Segoe UI';
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText((opts.brand || 'BARCODE').toUpperCase(), W/2, 22);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  } else if (frame === 'pricetag') {
+    ctx.fillStyle = bg; roundRect(ctx, 0, 0, W, H-30, 12); ctx.fill();
+    ctx.strokeStyle = fc; ctx.lineWidth = 2.5;
+    roundRect(ctx, 2, 2, W-4, H-32, 11); ctx.stroke();
+    ctx.fillStyle = fc; roundRect(ctx, 0, H-30, W, 30, 12, 'bottom'); ctx.fill();
+    ctx.font = 'bold 16px Inter, Segoe UI';
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(opts.price || '', W/2, H - 15);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  } else if (frame === 'dark') {
+    ctx.fillStyle = '#0f0f1a'; roundRect(ctx, 0, 0, W, H, 14); ctx.fill();
+    ctx.strokeStyle = fc; ctx.lineWidth = 2;
+    roundRect(ctx, 2, 2, W-4, H-4, 13); ctx.stroke();
+  }
+
+  if (opts.brand && frame !== 'card') {
+    ctx.font = 'bold 13px Inter, Segoe UI';
+    ctx.fillStyle = frame === 'dark' ? '#e2e8f0' : tc;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(opts.brand.toUpperCase(), W/2, pad + topExtra/2);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  }
+
+  ctx.drawImage(barcodeImg, pad, pad + topExtra);
+
+  if (opts.label) {
+    ctx.font = '600 12px Inter, Segoe UI';
+    ctx.fillStyle = frame === 'dark' ? '#a78bfa' : tc;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(opts.label, W/2, pad + topExtra + barcodeImg.height + 14);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  }
+
+  if (opts.price && frame !== 'pricetag') {
+    ctx.font = 'bold 15px Inter, Segoe UI';
+    ctx.fillStyle = fc; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(opts.price, W/2, H - 14);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  }
+}
+
+// ===============================================================
+//  QR FRAME RENDERING
+// ===============================================================
+
+function drawQrFrame(qrCanvas, opts) {
+  const frame   = currentQrFrame;
+  const pad     = opts.qrMargin + 10;
+  const botBand = (frame !== 'plain') ? 40 : 0;
+  const W       = opts.size + pad * 2;
+  const H       = opts.size + pad * 2 + botBand;
+
+  const out = document.getElementById('qrFrameCanvas');
+  out.width  = W; out.height = H;
+  out.style.display = 'block';
+  const ctx = out.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+
+  const fc = opts.frameColor;
+  const tc = opts.frameTxtC;
+
+  if (frame === 'plain') {
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+  } else if (frame === 'rounded') {
+    ctx.fillStyle = '#fff'; roundRect(ctx, 0, 0, W, H, 20); ctx.fill();
+    ctx.strokeStyle = fc; ctx.lineWidth = 3;
+    roundRect(ctx, 2, 2, W-4, H-4, 19); ctx.stroke();
+    ctx.fillStyle = fc; roundRect(ctx, 0, H-botBand, W, botBand, 20, 'bottom'); ctx.fill();
+  } else if (frame === 'shadow') {
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.22)'; ctx.shadowBlur = 20; ctx.shadowOffsetY = 8;
+    ctx.fillStyle = '#fff'; roundRect(ctx, 6, 6, W-12, H-12, 16); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = fc; roundRect(ctx, 6, H-botBand-6, W-12, botBand, 16, 'bottom'); ctx.fill();
+  } else if (frame === 'card') {
+    ctx.fillStyle = fc; roundRect(ctx, 0, 0, W, H, 18); ctx.fill();
+    ctx.fillStyle = '#fff'; roundRect(ctx, 6, 6, W-12, H-botBand-12, 14); ctx.fill();
+  } else if (frame === 'dark') {
+    ctx.fillStyle = '#0f0f1a'; roundRect(ctx, 0, 0, W, H, 18); ctx.fill();
+    ctx.strokeStyle = fc; ctx.lineWidth = 2;
+    roundRect(ctx, 2, 2, W-4, H-4, 17); ctx.stroke();
+    ctx.fillStyle = fc; roundRect(ctx, 0, H-botBand, W, botBand, 18, 'bottom'); ctx.fill();
+  } else if (frame === 'gradient') {
+    const g = ctx.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, fc); g.addColorStop(1, shadeHex(fc, -40));
+    ctx.fillStyle = g; roundRect(ctx, 0, 0, W, H, 18); ctx.fill();
+    ctx.fillStyle = '#fff'; roundRect(ctx, 6, 6, W-12, H-botBand-12, 14); ctx.fill();
+  }
+
+  const qrY = (frame === 'card' || frame === 'gradient') ? 12 : pad;
+  ctx.drawImage(qrCanvas, pad, qrY, opts.size, opts.size);
+
+  if (botBand > 0) {
+    ctx.font = 'bold 14px Inter, Segoe UI';
+    ctx.fillStyle = (frame === 'card' || frame === 'gradient') ? '#fff' : tc;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(opts.frameLabel || 'SCAN ME', W/2, H - botBand/2);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  }
+
+  if (opts.label && frame === 'plain') {
+    document.getElementById('qrLabelText').textContent = opts.label;
+  }
+}
+
+function drawQrScanMeIcon(canvas, size) {
+  const ctx = canvas.getContext('2d');
+  const cx = size/2, cy = size/2, r = size * 0.12;
+  ctx.save();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(cx, cy, r+4, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#6366f1';
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+  ctx.font = `bold ${Math.floor(r*0.7)}px Inter, Segoe UI`;
+  ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('QR', cx, cy);
+  ctx.restore();
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+//  rpgen.ai — AI Assistant (Free for all users, Google Gemini)
+// ═══════════════════════════════════════════════════════════════
+
+var _aiHistory = [];
+
+function aiSaveKey() {
+  var k = document.getElementById('aiApiKey').value.trim();
+  if (!k) { premToast('Please paste your Gemini API key.'); return; }
+  localStorage.setItem('rpgen_ai_key', k);
+  document.getElementById('aiKeySetup').style.display = 'none';
+  document.getElementById('aiChatWrap').style.display = 'flex';
+  aiShowWelcome();
+}
+
+function aiChangeKey() {
+  localStorage.removeItem('rpgen_ai_key');
+  _aiHistory = [];
+  document.getElementById('aiMessages').innerHTML = '';
+  document.getElementById('aiChatWrap').style.display = 'none';
+  document.getElementById('aiKeySetup').style.display = 'flex';
+  document.getElementById('aiApiKey').value = '';
+}
+
+function aiShowWelcome() {
+  var msgs = document.getElementById('aiMessages');
+  if (msgs && msgs.children.length === 0) {
+    aiAddMsg('ai', '👋 Hi! I\'m <strong>rpgen.ai</strong> — your AI assistant for Generator.<br><br>I can help you:<br>• 🎫 Create coupons — just tell me your shop, offer &amp; style<br>• 📱 Generate QR codes — WiFi, vCard, UPI, Instagram &amp; more<br>• 🔢 Set up barcodes — retail, shipping, medical formats<br><br>Try one of the quick prompts above or just type what you need!');
+  }
+}
+
+function aiQuickPrompt(btn) {
+  var txt = btn.textContent.replace(/^[^\s]+\s/, '');
+  document.getElementById('aiInput').value = txt;
+  aiAutoResize(document.getElementById('aiInput'));
+  aiSend();
+}
+
+function aiInputKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); aiSend(); }
+}
+
+function aiAutoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+}
+
+function aiAddMsg(role, html) {
+  var msgs = document.getElementById('aiMessages');
+  var div = document.createElement('div');
+  div.className = 'ai-msg ai-msg-' + role;
+  if (role === 'ai') {
+    div.innerHTML = '<div class="ai-msg-avatar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg></div><div class="ai-msg-bubble">' + html + '</div>';
+  } else {
+    div.innerHTML = '<div class="ai-msg-bubble">' + html + '</div>';
+  }
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function aiAddTyping() {
+  var msgs = document.getElementById('aiMessages');
+  var div = document.createElement('div');
+  div.className = 'ai-msg ai-msg-ai ai-typing-wrap';
+  div.id = 'aiTyping';
+  div.innerHTML = '<div class="ai-msg-avatar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg></div><div class="ai-msg-bubble ai-typing"><span></span><span></span><span></span></div>';
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function aiRemoveTyping() {
+  var t = document.getElementById('aiTyping');
+  if (t) t.remove();
+}
+
+async function aiSend() {
+  var inp = document.getElementById('aiInput');
+  var msg = inp.value.trim();
+  if (!msg) return;
+  var key = localStorage.getItem('rpgen_ai_key');
+  if (!key) { premToast('Please save your Gemini API key first.'); return; }
+
+  inp.value = '';
+  inp.style.height = 'auto';
+  aiAddMsg('user', msg.replace(/</g,'&lt;').replace(/>/g,'&gt;'));
+  _aiHistory.push({ role: 'user', parts: [{ text: msg }] });
+
+  var btn = document.getElementById('aiSendBtn');
+  btn.disabled = true;
+  aiAddTyping();
+
+  var systemPrompt = 'You are rpgen.ai, an AI assistant built into a web app called Generator by RATHNA Products. The app creates coupons, barcodes and QR codes.\n\nWhen the user asks to create/generate something, respond with:\n1. A friendly short explanation of what you are doing\n2. A JSON block wrapped in ```json ... ``` with the action and fields\n\nFor COUPON actions use:\n```json\n{"action":"coupon","brand":"...","title":"...","discount":"...","code":"...","desc":"...","minPur":"...","terms":"...","link":"...","style":"classic|modern|minimal|luxury|festival|neon|saree|grocery|vegetable|fruit|homefood|dairy|driedveg|nuts|herbal|seeds|wedding|bakery|pharmacy|electronics","bg":"#hexcolor","textCol":"#hexcolor","accent":"#hexcolor"}\n```\n\nFor QR CODE actions use:\n```json\n{"action":"qr","type":"url|text|phone|email|whatsapp|upi|sms|wifi|vcard|location|instagram|facebook|youtube","value":"...","label":"..."}\n```\nFor wifi: {"action":"qr","type":"wifi","ssid":"...","password":"...","security":"WPA"}\nFor vcard: {"action":"qr","type":"vcard","name":"...","phone":"...","email":"...","org":"...","url":"...","addr":"..."}\nFor location: {"action":"qr","type":"location","lat":"...","lng":"...","locname":"..."}\n\nFor BARCODE actions use:\n```json\n{"action":"barcode","value":"...","format":"CODE128|EAN13|EAN8|UPC|CODE39|ITF14","label":"...","brand":"...","price":"..."}\n```\n\nAlways pick sensible defaults. For coupon codes generate a short catchy code. For colors pick colors that match the style/theme. Be helpful, friendly and concise.';
+
+  var contents = [{ role: 'user', parts: [{ text: systemPrompt + '\n\nUser: ' + msg }] }];
+  if (_aiHistory.length > 2) {
+    contents = _aiHistory.slice(-8);
+    contents[0] = { role: 'user', parts: [{ text: systemPrompt + '\n\n' + contents[0].parts[0].text }] };
+  }
+
+  try {
+    var res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + key, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: contents, generationConfig: { temperature: 0.7, maxOutputTokens: 1024 } })
+    });
+    var data = await res.json();
+    aiRemoveTyping();
+
+    if (data.error) {
+      var errMsg = data.error.message || 'API error';
+      if (errMsg.includes('API_KEY') || errMsg.includes('key')) {
+        aiAddMsg('ai', '❌ Invalid API key. <button onclick="aiChangeKey()" style="color:#6366f1;background:none;border:none;cursor:pointer;font-weight:700;text-decoration:underline">Change Key</button>');
+      } else {
+        aiAddMsg('ai', '❌ Error: ' + errMsg.replace(/</g,'&lt;'));
+      }
+      btn.disabled = false;
+      return;
+    }
+
+    var text = data.candidates[0].content.parts[0].text;
+    _aiHistory.push({ role: 'model', parts: [{ text: text }] });
+
+    // Parse and apply JSON action
+    var jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
+    var displayText = text.replace(/```json[\s\S]*?```/g, '').trim();
+
+    if (jsonMatch) {
+      try {
+        var action = JSON.parse(jsonMatch[1]);
+        aiApplyAction(action);
+        var actionHtml = aiActionBadge(action);
+        aiAddMsg('ai', (displayText ? displayText.replace(/\n/g,'<br>') + '<br><br>' : '') + actionHtml);
+      } catch(e) {
+        aiAddMsg('ai', displayText.replace(/\n/g,'<br>') || 'Done!');
+      }
+    } else {
+      aiAddMsg('ai', text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>'));
+    }
+  } catch(e) {
+    aiRemoveTyping();
+    aiAddMsg('ai', '❌ Network error. Check your internet connection and try again.');
+  }
+  btn.disabled = false;
+}
+
+function aiApplyAction(a) {
+  if (a.action === 'coupon') {
+    // Switch to coupon tab
+    var couponBtn = document.querySelector('[data-tab="coupon"]');
+    if (couponBtn) switchTab(couponBtn, 'coupon');
+    // Fill fields
+    if (a.brand)    document.getElementById('couponBrand').value    = a.brand;
+    if (a.title)    document.getElementById('couponTitle').value    = a.title;
+    if (a.discount) document.getElementById('couponDiscount').value = a.discount;
+    if (a.code)     document.getElementById('couponCode').value     = a.code;
+    if (a.desc)     document.getElementById('couponDesc').value     = a.desc;
+    if (a.minPur)   document.getElementById('couponMin').value      = a.minPur;
+    if (a.terms)    document.getElementById('couponTerms').value    = a.terms;
+    if (a.link)     document.getElementById('couponLink').value     = a.link;
+    if (a.bg)       document.getElementById('couponBg').value       = a.bg;
+    if (a.textCol)  document.getElementById('couponText').value     = a.textCol;
+    if (a.accent)   document.getElementById('couponAccent').value   = a.accent;
+    // Pick style
+    if (a.style) {
+      var sc = document.querySelector('[data-style="' + a.style + '"]');
+      if (sc) pickStyle(sc);
+    }
+    setTimeout(function() { generateCoupon(); }, 100);
+
+  } else if (a.action === 'qr') {
+    // Switch to QR tab
+    var qrBtn = document.querySelector('[data-tab="qrcode"]');
+    if (qrBtn) switchTab(qrBtn, 'qrcode');
+    var typeEl = document.getElementById('qrType');
+    if (typeEl && a.type) { typeEl.value = a.type; updateQrPlaceholder(); }
+    // Fill by type
+    if (a.type === 'wifi') {
+      if (a.ssid)     document.getElementById('qrWifiSsid').value = a.ssid;
+      if (a.password) document.getElementById('qrWifiPass').value = a.password;
+      if (a.security) document.getElementById('qrWifiSec').value  = a.security;
+    } else if (a.type === 'vcard') {
+      if (a.name)  document.getElementById('qrVcardName').value  = a.name;
+      if (a.phone) document.getElementById('qrVcardPhone').value = a.phone;
+      if (a.email) document.getElementById('qrVcardEmail').value = a.email;
+      if (a.org)   document.getElementById('qrVcardOrg').value   = a.org;
+      if (a.url)   document.getElementById('qrVcardUrl').value   = a.url;
+      if (a.addr)  document.getElementById('qrVcardAddr').value  = a.addr;
+    } else if (a.type === 'location') {
+      if (a.lat)     document.getElementById('qrLat').value     = a.lat;
+      if (a.lng)     document.getElementById('qrLng').value     = a.lng;
+      if (a.locname) document.getElementById('qrLocName').value = a.locname;
+    } else if (a.type === 'instagram' || a.type === 'facebook' || a.type === 'youtube') {
+      if (a.value) document.getElementById('qrSocialUrl').value = a.value;
+    } else {
+      if (a.value) document.getElementById('qrValue').value = a.value;
+    }
+    if (a.label) document.getElementById('qrLabel').value = a.label;
+    setTimeout(function() { generateQR(); }, 100);
+
+  } else if (a.action === 'barcode') {
+    // Switch to barcode tab
+    var bcBtn = document.querySelector('[data-tab="barcode"]');
+    if (bcBtn) switchTab(bcBtn, 'barcode');
+    if (a.value)  document.getElementById('barcodeValue').value = a.value;
+    if (a.format) document.getElementById('barcodeFormat').value = a.format;
+    if (a.label)  document.getElementById('barcodeLabel').value = a.label;
+    if (a.brand)  document.getElementById('barcodeBrand').value = a.brand;
+    if (a.price)  document.getElementById('barcodePrice').value = a.price;
+    setTimeout(function() { generateBarcode(); }, 100);
+  }
+}
+
+function aiActionBadge(a) {
+  var icons = { coupon: '🎫', qr: '📱', barcode: '🔢' };
+  var labels = { coupon: 'Coupon created', qr: 'QR code created', barcode: 'Barcode created' };
+  var icon = icons[a.action] || '✅';
+  var label = labels[a.action] || 'Done';
+  return '<div style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;background:linear-gradient(135deg,rgba(99,102,241,0.1),rgba(139,92,246,0.08));border:1.5px solid rgba(99,102,241,0.25);border-radius:10px;font-size:0.82rem;font-weight:700;color:#6366f1;margin-top:6px">' + icon + ' ' + label + ' &mdash; check the tab! <button onclick="document.querySelector(\'[data-tab=\\"' + a.action + (a.action==='qr'?'code':'') + '\\"]\').click()" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:8px;padding:4px 10px;font-size:0.78rem;font-weight:700;cursor:pointer;margin-left:4px">Go &rarr;</button></div>';
+}
