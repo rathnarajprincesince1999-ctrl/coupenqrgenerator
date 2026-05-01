@@ -46,7 +46,7 @@
     s.textContent = `
       #rp-follow-btn {
         position: fixed;
-        bottom: 22px;
+        bottom: 80px;
         right: 22px;
         z-index: 99990;
         width: 48px;
@@ -67,7 +67,7 @@
 
       #rp-follow-panel {
         position: fixed;
-        bottom: 82px;
+        bottom: 140px;
         right: 18px;
         z-index: 99989;
         width: 300px;
@@ -209,7 +209,7 @@
       /* ── Mobile responsive ── */
       @media (max-width: 480px) {
         #rp-follow-btn {
-          bottom: 72px;
+          bottom: 130px;
           right: 14px;
           width: 44px;
           height: 44px;
@@ -246,7 +246,7 @@
       /* bottom-nav safe area for phones with home indicator */
       @supports (padding-bottom: env(safe-area-inset-bottom)) {
         @media (max-width: 480px) {
-          #rp-follow-btn { bottom: calc(72px + env(safe-area-inset-bottom)); }
+          #rp-follow-btn { bottom: calc(130px + env(safe-area-inset-bottom)); }
           .rp-social-list { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
         }
       }
