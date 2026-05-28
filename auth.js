@@ -386,7 +386,25 @@
           <input type="password" id="rpLPass" placeholder="Your password" autocomplete="current-password"
             onkeydown="if(event.key==='Enter')rpDoLogin()"/>
         </div>
-        <div class="rpa-forgot"><a onclick="rpForgotPwd()">Forgot password?</a></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px">
+          <div style="display:flex;align-items:center;gap:8px;flex:1">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.8rem;font-weight:700;color:#555;white-space:nowrap">
+              <input type="checkbox" id="rpRememberMe" checked style="width:15px;height:15px;accent-color:#8B0000;cursor:pointer;flex-shrink:0"/>
+              Remember me
+            </label>
+            <select id="rpRememberDuration" style="border:1.5px solid #e0e0e0;border-radius:8px;padding:5px 8px;font-size:.78rem;color:#444;outline:none;cursor:pointer;background:#fff;flex:1;min-width:0">
+              <option value="86400000">1 Day</option>
+              <option value="259200000">3 Days</option>
+              <option value="604800000">1 Week</option>
+              <option value="1209600000">2 Weeks</option>
+              <option value="2592000000" selected>1 Month</option>
+              <option value="7776000000">3 Months</option>
+              <option value="15552000000">6 Months</option>
+              <option value="31536000000">1 Year</option>
+            </select>
+          </div>
+          <div class="rpa-forgot" style="margin:0"><a onclick="rpForgotPwd()">Forgot password?</a></div>
+        </div>
         <button class="rpa-btn" id="rpLoginBtn" onclick="rpDoLogin()">Login to My Account</button>
         <div class="rpa-msg" id="rpLoginMsg"></div>
         <div class="rpa-divider">or</div>
@@ -454,7 +472,19 @@
     document.getElementById('rpTabSignup').classList.toggle('active', tab === 'signup');
     if (tab === 'signup') genCaptcha('rpCaptchaAns', 'rpCaptchaQ');
     clearMsgs();
+    _syncRememberDuration();
   };
+
+  function _syncRememberDuration() {
+    const cb  = document.getElementById('rpRememberMe');
+    const sel = document.getElementById('rpRememberDuration');
+    if (cb && sel) sel.style.opacity = cb.checked ? '1' : '0.35';
+  }
+
+  function _wireRememberMe() {
+    const cb = document.getElementById('rpRememberMe');
+    if (cb) cb.addEventListener('change', _syncRememberDuration);
+  }
 
   function clearMsgs() {
     ['rpLoginMsg','rpSignupMsg'].forEach(id => {
@@ -476,6 +506,7 @@
     rpSwitchTab(tab || 'login');
     document.getElementById('rpAuthOverlay').classList.add('open');
     document.body.style.overflow = 'hidden';
+    _wireRememberMe();
     // Focus first input
     setTimeout(() => {
       const inp = document.getElementById(tab === 'signup' ? 'rpSEmail' : 'rpLEmail');
@@ -495,13 +526,19 @@
     const pass = document.getElementById('rpLPass').value;
     if (!emailOrPhone || !pass) return showMsg('rpLoginMsg', 'Please fill in all fields.', 'error');
 
+    // Read remember-me setting
+    const rememberChecked = document.getElementById('rpRememberMe')?.checked !== false;
+    const rememberMs = rememberChecked
+      ? parseInt(document.getElementById('rpRememberDuration')?.value || '2592000000', 10)
+      : 1 * 24 * 60 * 60 * 1000; // 1 day if unchecked
+
     const btn = document.getElementById('rpLoginBtn');
     btn.disabled = true; btn.textContent = 'Logging in…';
 
     try {
       const res = await apiPost({ action: 'rpLogin', email: emailOrPhone, password: pass });
       if (res.success) {
-        setUser(res.user);
+        setUser(res.user, rememberMs);
         rpAuthClose();
         updateAuthUI();
         if (typeof rpOnLogin === 'function') rpOnLogin(res.user);
