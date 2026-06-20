@@ -18,7 +18,57 @@ let currentStyle = 'classic';
 let _couponTimer = null;
 function generateCouponPreview() {
   clearTimeout(_couponTimer);
-  _couponTimer = setTimeout(generateCoupon, 350);
+  _couponTimer = setTimeout(_drawCouponNoCount, 350);
+}
+
+// Internal draw without burning the free limit — used by live preview
+function _drawCouponNoCount() {
+  const canvas = document.getElementById('couponCanvas');
+  const ctx    = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const d = {
+    brand   : document.getElementById('couponBrand').value    || 'RATHNA Products',
+    title   : document.getElementById('couponTitle').value    || 'SPECIAL OFFER',
+    discount: document.getElementById('couponDiscount').value || '30% OFF',
+    code    : document.getElementById('couponCode').value     || 'SAVE30',
+    expiry  : document.getElementById('couponExpiry').value,
+    desc    : document.getElementById('couponDesc').value     || '',
+    minPur  : document.getElementById('couponMin').value      || '',
+    terms   : document.getElementById('couponTerms').value    || '',
+    link    : document.getElementById('couponLink') ? document.getElementById('couponLink').value || '' : '',
+    bg      : document.getElementById('couponBg').value,
+    textCol : document.getElementById('couponText').value,
+    accent  : document.getElementById('couponAccent').value,
+    font    : document.getElementById('couponFont') ? document.getElementById('couponFont').value : 'Inter, Segoe UI',
+    border  : document.getElementById('couponBorder') ? document.getElementById('couponBorder').value : 'none',
+    watermark: document.getElementById('couponWatermark') ? document.getElementById('couponWatermark').value : '',
+    productImg: window.couponProductImg || null,
+  };
+  ctx.clearRect(0, 0, W, H);
+  window._couponFont = d.font;
+  switch (currentStyle) {
+    case 'classic':     drawClassic(ctx, W, H, d);     break;
+    case 'modern':      drawModern(ctx, W, H, d);      break;
+    case 'minimal':     drawMinimal(ctx, W, H, d);     break;
+    case 'luxury':      drawLuxury(ctx, W, H, d);      break;
+    case 'festival':    drawFestival(ctx, W, H, d);    break;
+    case 'neon':        drawNeon(ctx, W, H, d);        break;
+    case 'saree':       drawSaree(ctx, W, H, d);       break;
+    case 'grocery':     drawGrocery(ctx, W, H, d);     break;
+    case 'vegetable':   drawVegetable(ctx, W, H, d);   break;
+    case 'fruit':       drawFruit(ctx, W, H, d);       break;
+    case 'homefood':    drawHomefood(ctx, W, H, d);    break;
+    case 'dairy':       drawDairy(ctx, W, H, d);       break;
+    case 'driedveg':    drawDriedveg(ctx, W, H, d);    break;
+    case 'nuts':        drawNuts(ctx, W, H, d);        break;
+    case 'herbal':      drawHerbal(ctx, W, H, d);      break;
+    case 'seeds':       drawSeeds(ctx, W, H, d);       break;
+    case 'wedding':     drawWedding(ctx, W, H, d);     break;
+    case 'bakery':      drawBakery(ctx, W, H, d);      break;
+    case 'pharmacy':    drawPharmacy(ctx, W, H, d);    break;
+    case 'electronics': drawElectronics(ctx, W, H, d); break;
+  }
+  drawExtras(ctx, W, H, d);
 }
 function pickStyle(card) {
   const grid = card.closest('.style-grid') || document.querySelector('.style-grid');
@@ -98,6 +148,7 @@ function getActiveLogo() {
 }
 
 // ── GENERATION LIMIT (Free: 50 total) ──────────────────────────────────────────
+// Only explicit generate button clicks count — live preview debounce does NOT burn limit
 const FREE_LIMIT = 50;
 
 function isPremium() {
