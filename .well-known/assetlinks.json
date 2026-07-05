@@ -1,0 +1,1 @@
+[{"relation": ["delegate_permission/common.handle_all_urls"], "target": {"namespace": "android_app", "package_name": "store.rathnaproducts.generator", "sha256_cert_fingerprints": ["DC:07:FF:71:5B:EC:DD:4A:2F:04:06:66:5B:3D:18:9A:A5:69:16:B1:22:DA:B7:91:DA:4A:23:89:8D:41:2C:54"]}}]
