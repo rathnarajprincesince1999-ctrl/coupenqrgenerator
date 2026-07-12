@@ -22,11 +22,13 @@
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return null;
       const parsed = JSON.parse(raw);
+      // Support old format (no expiry) — treat as valid indefinitely
       if (!parsed || typeof parsed !== 'object') return null;
       if (parsed._expiry && Date.now() > parsed._expiry) {
         localStorage.removeItem(STORAGE_KEY);
         return null;
       }
+      // Return user data without internal fields
       const { _expiry, ...user } = parsed;
       return Object.keys(user).length ? user : null;
     } catch { return null; }
@@ -38,27 +40,38 @@
   }
   function clearUser() { localStorage.removeItem(STORAGE_KEY); }
 
-  // ── Guest → User data migration (no-op for non-store sites) ──
+  // ── Guest → User data migration ───────────────────────────
+  // Each site uses a prefix: 'hm_' (Home Made) or 'rs_' (Sarees).
+  // Guest keys: hm_guest_addresses, hm_orders, hm_cart, hm_selected_addr
+  //             rs_guest_addresses, rs_orders, rs_cart, rs_selected_addr
+  // User keys:  hm_user_{uid}_addresses, hm_user_{uid}_orders, etc.
+  // This function merges guest data into the logged-in user's scoped keys,
+  // then clears the guest keys — scoped per site so data stays isolated.
   function migrateGuestDataToUser(user) {
     const uid = user.id || user.email;
     if (!uid) return;
+
     const sitePrefixes = ['hm', 'rs'];
     sitePrefixes.forEach(prefix => {
-      const guestAddrKey    = prefix + '_guest_addresses';
-      const guestOrdersKey  = prefix + '_orders';
-      const guestCartKey    = prefix + '_cart';
-      const guestSelAddrKey = prefix + '_selected_addr';
-      const userAddrKey     = prefix + '_user_' + uid + '_addresses';
-      const userOrdersKey   = prefix + '_user_' + uid + '_orders';
-      const userCartKey     = prefix + '_user_' + uid + '_cart';
-      void guestSelAddrKey; // used in removeItem below
+      const guestAddrKey   = prefix + '_guest_addresses';
+      const guestOrdersKey = prefix + '_orders';
+      const guestCartKey   = prefix + '_cart';
+      const guestSelAddrKey= prefix + '_selected_addr';
 
+      const userAddrKey    = prefix + '_user_' + uid + '_addresses';
+      const userOrdersKey  = prefix + '_user_' + uid + '_orders';
+      const userCartKey    = prefix + '_user_' + uid + '_cart';
+
+      // ── Addresses ──
       const guestAddrs = _safeParseArr(localStorage.getItem(guestAddrKey));
       if (guestAddrs.length) {
         const userAddrs = _safeParseArr(localStorage.getItem(userAddrKey));
+        // Merge: add guest addresses not already in user list (match by label+phone)
         const merged = [...userAddrs];
         guestAddrs.forEach(ga => {
-          const dup = merged.find(ua => ua.label === ga.label && ua.phone === ga.phone && ua.address === ga.address);
+          const dup = merged.find(ua =>
+            ua.label === ga.label && ua.phone === ga.phone && ua.address === ga.address
+          );
           if (!dup) merged.push(ga);
         });
         localStorage.setItem(userAddrKey, JSON.stringify(merged));
@@ -66,14 +79,20 @@
         localStorage.removeItem(guestSelAddrKey);
       }
 
+      // ── Orders ──
       const guestOrdersRaw = localStorage.getItem(guestOrdersKey);
       if (guestOrdersRaw) {
         const guestOrders = _safeParseOrders(guestOrdersRaw);
         if (guestOrders.length) {
-          const userOrders = _safeParseOrders(localStorage.getItem(userOrdersKey));
+          const userOrdersRaw = localStorage.getItem(userOrdersKey);
+          const userOrders = _safeParseOrders(userOrdersRaw);
+          // Merge: add guest orders not already present (match by orderId or timestamp)
           const merged = [...userOrders];
           guestOrders.forEach(go => {
-            const dup = merged.find(uo => (go.orderId && uo.orderId === go.orderId) || (go.timestamp && uo.timestamp === go.timestamp));
+            const dup = merged.find(uo =>
+              (go.orderId && uo.orderId === go.orderId) ||
+              (go.timestamp && uo.timestamp === go.timestamp)
+            );
             if (!dup) merged.push({ ...go, _migratedFromGuest: true });
           });
           const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
@@ -82,13 +101,16 @@
         }
       }
 
+      // ── Cart ──
       const guestCart = _safeParseArr(localStorage.getItem(guestCartKey));
       if (guestCart.length) {
         const userCart = _safeParseArr(localStorage.getItem(userCartKey));
+        // Merge cart: combine quantities for same product id
         const merged = [...userCart];
         guestCart.forEach(gi => {
           const existing = merged.find(ui => (ui._vid || ui.id) === (gi._vid || gi.id));
-          if (existing) { existing.qty += gi.qty; } else { merged.push(gi); }
+          if (existing) { existing.qty += gi.qty; }
+          else { merged.push(gi); }
         });
         localStorage.setItem(userCartKey, JSON.stringify(merged));
         localStorage.removeItem(guestCartKey);
@@ -97,7 +119,10 @@
   }
 
   function _safeParseArr(raw) {
-    try { const p = JSON.parse(raw || '[]'); return Array.isArray(p) ? p : []; } catch { return []; }
+    try {
+      const p = JSON.parse(raw || '[]');
+      return Array.isArray(p) ? p : [];
+    } catch { return []; }
   }
   function _safeParseOrders(raw) {
     try {
@@ -110,6 +135,8 @@
   }
 
   // ── Public: get user-scoped storage key for current site ──
+  // Sites call rpGetSiteKey('hm', 'orders') → 'hm_user_{uid}_orders' when logged in,
+  // or 'hm_orders' (guest key) when not logged in.
   window.rpGetSiteKey = function(prefix, type) {
     const user = getUser();
     if (!user) return prefix + (type === 'addresses' ? '_guest_addresses' : '_' + type);
@@ -294,7 +321,7 @@
 .rpp-info { flex:1; min-width:0; }
 .rpp-name { color:#fff; font-size:1rem; font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .rpp-email { color:rgba(255,255,255,.75); font-size:.75rem; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.rpp-phone { color:rgba(255,215,0,.9); font-size:.75rem; margin-top:1px; }
+.rpp-phone { color:rgba(255,215,0,.9); font-size:.75rem; margin-top:1px; display:flex; align-items:center; gap:4px; }
 .rpp-close {
   background:none; border:none; color:rgba(255,255,255,.8);
   font-size:1.3rem; cursor:pointer; padding:4px 8px; border-radius:8px; flex-shrink:0;
@@ -341,12 +368,113 @@
   text-decoration:none; transition:opacity .2s;
 }
 .rpp-seller-banner a:hover { opacity:.88; }
+.rpp-join-seller-btn {
+  position:absolute; bottom:-14px; right:16px;
+  width:40px; height:40px; border-radius:50%;
+  background:linear-gradient(135deg,#1565c0,#1976d2);
+  border:3px solid #fff; box-shadow:0 3px 12px rgba(0,0,0,.3);
+  display:flex; align-items:center; justify-content:center;
+  text-decoration:none; transition:transform .2s,box-shadow .2s; z-index:10;
+}
+.rpp-join-seller-btn:hover { transform:scale(1.12); box-shadow:0 5px 18px rgba(0,0,0,.35); }
+.rpp-join-seller-btn svg { width:18px; height:18px; }
+.rpp-join-seller-btn .rpp-join-tip {
+  position:absolute; bottom:calc(100% + 7px); right:0;
+  background:#1565c0; color:#fff; font-size:.63rem; font-weight:800;
+  padding:3px 8px; border-radius:7px; white-space:nowrap;
+  pointer-events:none; opacity:0; transition:opacity .2s;
+}
+.rpp-join-seller-btn:hover .rpp-join-tip { opacity:1; }
+.rpp-brand-logos {
+  display:grid; grid-template-columns:repeat(4,1fr); gap:10px; padding:4px 2px;
+}
+.rpp-brand-logo-btn {
+  display:flex; align-items:center; justify-content:center;
+  width:100%; aspect-ratio:1; border-radius:14px;
+  background:#f9fafb; border:1.5px solid #f0e0e0;
+  overflow:hidden; transition:transform .18s,box-shadow .18s;
+  text-decoration:none;
+}
+.rpp-brand-logo-btn:hover { transform:scale(1.08); box-shadow:0 4px 14px rgba(0,0,0,.12); border-color:#ffd700; }
+.rpp-brand-logo-btn img { width:72%; height:72%; object-fit:contain; }
 .rpp-seller-status {
   background:linear-gradient(135deg,#f0fdf4,#dcfce7);
   border:1.5px solid #bbf7d0; border-radius:14px; padding:14px 16px;
 }
 .rpp-seller-status h4 { font-size:.88rem; font-weight:900; color:#15803d; margin:0 0 4px; }
 .rpp-seller-status p  { font-size:.78rem; color:#166534; margin:0; }
+
+/* ── Edit Profile Modal ── */
+#rpEditProfileOverlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.65);
+  z-index:100000; display:none; align-items:center; justify-content:center; padding:12px;
+}
+#rpEditProfileOverlay.open { display:flex; }
+#rpEditProfileModal {
+  background:#fff; border-radius:22px; width:100%; max-width:460px;
+  box-shadow:0 28px 80px rgba(0,0,0,.35); overflow:hidden;
+  animation:rpSlideUp .28s cubic-bezier(.34,1.56,.64,1);
+  max-height:92vh; display:flex; flex-direction:column;
+}
+.rpep-head {
+  background:linear-gradient(135deg,#8B0000,#c0392b);
+  padding:18px 22px 15px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
+}
+.rpep-head h2 {
+  color:#fff; font-size:1rem; font-weight:900; margin:0;
+  display:flex; align-items:center; gap:9px;
+}
+.rpep-close {
+  background:none; border:none; color:rgba(255,255,255,.8);
+  font-size:1.3rem; cursor:pointer; padding:2px 7px; border-radius:6px; line-height:1;
+}
+.rpep-close:hover { background:rgba(255,255,255,.15); }
+.rpep-body { padding:20px 22px 22px; overflow-y:auto; flex:1; }
+.rpep-avatar-row {
+  display:flex; align-items:center; gap:14px; margin-bottom:20px;
+  padding:14px 16px; background:#fff5f5; border-radius:14px; border:1.5px solid #fecaca;
+}
+.rpep-avatar-big {
+  width:56px; height:56px; border-radius:50%; flex-shrink:0;
+  background:linear-gradient(135deg,#ffd700,#ffb300);
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.2rem; font-weight:900; color:#7b0000;
+  border:3px solid rgba(139,0,0,.2);
+}
+.rpep-avatar-info { flex:1; min-width:0; }
+.rpep-avatar-info strong { display:block; font-size:.9rem; font-weight:900; color:#1a1a2e; }
+.rpep-avatar-info span { font-size:.75rem; color:#888; }
+.rpep-section { font-size:.68rem; font-weight:800; color:#9ca3af; text-transform:uppercase; letter-spacing:1px; margin:16px 0 8px; }
+.rpep-row { display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+.rpep-field { margin-bottom:12px; }
+.rpep-field label { display:block; font-size:.73rem; font-weight:700; color:#555; margin-bottom:5px; text-transform:uppercase; letter-spacing:.4px; }
+.rpep-field input, .rpep-field select {
+  width:100%; padding:10px 13px; border:1.5px solid #e0e0e0;
+  border-radius:10px; font-size:.9rem; outline:none;
+  transition:border-color .2s; box-sizing:border-box; background:#fff;
+}
+.rpep-field input:focus, .rpep-field select:focus { border-color:#8B0000; }
+.rpep-field input[readonly] { background:#f9fafb; color:#888; cursor:not-allowed; }
+.rpep-msg { margin-top:10px; padding:9px 13px; border-radius:10px; font-size:.81rem; font-weight:600; display:none; }
+.rpep-msg.error   { background:#fff5f5; color:#c0392b; border:1px solid #fecaca; display:block; }
+.rpep-msg.success { background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; display:block; }
+.rpep-actions { display:flex; gap:10px; margin-top:16px; }
+.rpep-btn-save {
+  flex:2; padding:12px; background:linear-gradient(135deg,#8B0000,#c0392b);
+  color:#fff; border:none; border-radius:12px; font-size:.92rem;
+  font-weight:800; cursor:pointer; transition:opacity .2s;
+}
+.rpep-btn-save:hover { opacity:.88; }
+.rpep-btn-save:disabled { opacity:.5; cursor:not-allowed; }
+.rpep-btn-cancel {
+  flex:1; padding:12px; border:1.5px solid #e5e7eb; border-radius:12px;
+  background:#fff; font-weight:700; font-size:.88rem; cursor:pointer; color:#555;
+}
+.rpep-btn-cancel:hover { background:#f9fafb; }
+@media(max-width:480px) {
+  .rpep-row { grid-template-columns:1fr; }
+  .rpep-body { padding:14px 14px 18px; }
+}
 @media(max-width:480px) {
   .rpa-row { grid-template-columns:1fr; }
   .rpa-body { padding:14px 14px 18px; }
@@ -357,6 +485,86 @@
   }
 
   // ── Auth Modal HTML ───────────────────────────────────────
+  const RP_GOOGLE_CLIENT_ID = '1064753915121-sl01uojh0q5ufcokck11ntstcn8a2dhp.apps.googleusercontent.com';
+
+  function _loadGIS(cb) {
+    if (window.google && window.google.accounts) { cb(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.onload = cb;
+    document.head.appendChild(s);
+  }
+
+  function _googleBtnHTML(label) {
+    return `<svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> ${label}`;
+  }
+
+  async function _onGoogleCredential(response) {
+    const parts   = response.credential.split('.');
+    const padded  = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(padded));
+    const source  = window.location.hostname || 'rathnaproducts.store';
+
+    ['rpGoogleLoginBtn','rpGoogleSignupBtn'].forEach(id => {
+      const b = document.getElementById(id);
+      if (b) { b.disabled = true; b.textContent = 'Verifying…'; }
+    });
+    clearMsgs();
+
+    try {
+      const res = await apiPost({
+        action:   'rpGoogleAuth',
+        email:    payload.email,
+        name:     payload.name || '',
+        googleId: payload.sub,
+        avatar:   payload.picture || '',
+        source
+      });
+      if (res.success) {
+        migrateGuestDataToUser(res.user);
+        setUser(res.user, DEFAULT_REMEMBER_MS);
+        rpAuthClose();
+        updateAuthUI();
+        if (typeof rpOnLogin === 'function') rpOnLogin(res.user);
+        _showToast(res.isNewUser ? '🎉 Welcome to RATHNA Products!' : '👋 Welcome back, ' + (res.user.name || res.user.email.split('@')[0]) + '!');
+      } else {
+        showMsg('rpLoginMsg',  res.error || 'Google sign-in failed.', 'error');
+        showMsg('rpSignupMsg', res.error || 'Google sign-in failed.', 'error');
+      }
+    } catch {
+      showMsg('rpLoginMsg',  'Network error. Please try again.', 'error');
+      showMsg('rpSignupMsg', 'Network error. Please try again.', 'error');
+    }
+    ['rpGoogleLoginBtn','rpGoogleSignupBtn'].forEach(id => {
+      const b = document.getElementById(id);
+      if (b) { b.disabled = false; b.innerHTML = _googleBtnHTML(b.dataset.label); }
+    });
+  }
+
+  window.rpTriggerGoogle = function() {
+    _loadGIS(() => {
+      google.accounts.id.initialize({
+        client_id:             RP_GOOGLE_CLIENT_ID,
+        callback:              _onGoogleCredential,
+        auto_select:           false,
+        cancel_on_tap_outside: true,
+        ux_mode:               'popup'
+      });
+      google.accounts.id.prompt(n => {
+        if (n.isNotDisplayed() || n.isSkippedMoment()) {
+          // Fallback: render hidden button and click it
+          let gd = document.getElementById('_rp_gis_div');
+          if (!gd) { gd = document.createElement('div'); gd.id = '_rp_gis_div'; gd.style.display = 'none'; document.body.appendChild(gd); }
+          google.accounts.id.renderButton(gd, { type: 'standard', theme: 'outline', size: 'large' });
+          setTimeout(() => {
+            const rb = gd.querySelector('[role="button"],button,div[tabindex]');
+            if (rb) rb.click();
+          }, 200);
+        }
+      });
+    });
+  };
+
   function injectAuthModal() {
     if (document.getElementById('rpAuthOverlay')) return;
     const html = `
@@ -367,7 +575,7 @@
         <img src="https://rathnaproducts.store/rathna%20logo2.0.png" alt="RP" onerror="this.style.display='none'"/>
         RATHNA Products
       </h2>
-      <button class="rpa-close" onclick="rpAuthClose()">✕</button>
+      <button class="rpa-close" onclick="rpAuthClose()" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div class="rpa-tabs">
       <button class="rpa-tab active" id="rpTabLogin" onclick="rpSwitchTab('login')">Login</button>
@@ -408,6 +616,11 @@
         <button class="rpa-btn" id="rpLoginBtn" onclick="rpDoLogin()">Login to My Account</button>
         <div class="rpa-msg" id="rpLoginMsg"></div>
         <div class="rpa-divider">or</div>
+        <button type="button" id="rpGoogleLoginBtn" data-label="Continue with Google" onclick="rpTriggerGoogle()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:9px;padding:11px;border-radius:12px;background:#fff;border:1.5px solid #dadce0;font-size:.9rem;font-weight:700;color:#3c4043;cursor:pointer;transition:box-shadow .2s;box-shadow:0 1px 4px rgba(0,0,0,.08)">
+          <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          Continue with Google
+        </button>
+        <div class="rpa-divider" style="margin-top:10px">or</div>
         <div style="text-align:center;font-size:.82rem;color:#666">
           New here? <a onclick="rpSwitchTab('signup')" style="color:#8B0000;font-weight:700;cursor:pointer">Create an account</a>
         </div>
@@ -453,6 +666,11 @@
         <button class="rpa-btn" id="rpSignupBtn" onclick="rpDoSignup()">Create My Account</button>
         <div class="rpa-msg" id="rpSignupMsg"></div>
         <div class="rpa-divider">or</div>
+        <button type="button" id="rpGoogleSignupBtn" data-label="Sign up with Google" onclick="rpTriggerGoogle()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:9px;padding:11px;border-radius:12px;background:#fff;border:1.5px solid #dadce0;font-size:.9rem;font-weight:700;color:#3c4043;cursor:pointer;transition:box-shadow .2s;box-shadow:0 1px 4px rgba(0,0,0,.08)">
+          <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          Sign up with Google
+        </button>
+        <div class="rpa-divider" style="margin-top:10px">or</div>
         <div style="text-align:center;font-size:.82rem;color:#666">
           Already have an account? <a onclick="rpSwitchTab('login')" style="color:#8B0000;font-weight:700;cursor:pointer">Login</a>
         </div>
@@ -472,6 +690,7 @@
     document.getElementById('rpTabSignup').classList.toggle('active', tab === 'signup');
     if (tab === 'signup') genCaptcha('rpCaptchaAns', 'rpCaptchaQ');
     clearMsgs();
+    // Sync remember-me dropdown visibility
     _syncRememberDuration();
   };
 
@@ -481,6 +700,7 @@
     if (cb && sel) sel.style.opacity = cb.checked ? '1' : '0.35';
   }
 
+  // Wire up checkbox after modal is injected
   function _wireRememberMe() {
     const cb = document.getElementById('rpRememberMe');
     if (cb) cb.addEventListener('change', _syncRememberDuration);
@@ -538,6 +758,7 @@
     try {
       const res = await apiPost({ action: 'rpLogin', email: emailOrPhone, password: pass });
       if (res.success) {
+        migrateGuestDataToUser(res.user);   // move guest cart/orders/addresses → user keys
         setUser(res.user, rememberMs);
         rpAuthClose();
         updateAuthUI();
@@ -580,7 +801,8 @@
       const source = window.location.hostname || 'rathnaproducts.store';
       const res = await apiPost({ action: 'rpRegister', email, phone, password: pass, source });
       if (res.success) {
-        setUser(res.user);
+        migrateGuestDataToUser(res.user);   // move guest cart/orders/addresses → user keys
+        setUser(res.user, DEFAULT_REMEMBER_MS);
         rpAuthClose();
         updateAuthUI();
         if (typeof rpOnLogin === 'function') rpOnLogin(res.user);
@@ -647,14 +869,15 @@
   <div id="rpProfilePanel">
 
     <!-- Header -->
-    <div class="rpp-head" id="rppHead">
+    <div class="rpp-head" id="rppHead" style="position:relative">
       <div class="rpp-avatar" id="rppAvatar"></div>
       <div class="rpp-info">
         <div class="rpp-name"  id="rppName">My Account</div>
         <div class="rpp-email" id="rppEmail"></div>
         <div class="rpp-phone" id="rppPhone"></div>
       </div>
-      <button class="rpp-close" onclick="rpProfileClose()">✕</button>
+      <button class="rpp-close" onclick="rpProfileClose()" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <span id="rppJoinSellerBtn"></span>
     </div>
 
     <!-- Body -->
@@ -667,28 +890,255 @@
     document.body.insertAdjacentHTML('beforeend', html);
   }
 
+  // ── Edit Profile Modal HTML ───────────────────────────────
+  function injectEditProfileModal() {
+    if (document.getElementById('rpEditProfileOverlay')) return;
+    const html = `
+<div id="rpEditProfileOverlay" onclick="if(event.target===this)rpEditProfileClose()">
+  <div id="rpEditProfileModal">
+    <div class="rpep-head">
+      <h2>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Edit Profile
+      </h2>
+      <button class="rpep-close" onclick="rpEditProfileClose()" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="rpep-body">
+
+      <!-- Avatar row -->
+      <div class="rpep-avatar-row">
+        <div class="rpep-avatar-big" id="rpepAvatarBig"></div>
+        <div class="rpep-avatar-info">
+          <strong id="rpepAvatarName">My Account</strong>
+          <span id="rpepAvatarEmail"></span>
+        </div>
+      </div>
+
+      <!-- Basic Info -->
+      <div class="rpep-section">Basic Information</div>
+      <div class="rpep-row">
+        <div class="rpep-field">
+          <label>Full Name</label>
+          <input type="text" id="rpepName" placeholder="Your full name" maxlength="60"/>
+        </div>
+        <div class="rpep-field">
+          <label>Phone Number</label>
+          <input type="tel" id="rpepPhone" placeholder="10-digit number" maxlength="10"/>
+        </div>
+      </div>
+      <div class="rpep-field">
+        <label>Email Address <span style="color:#aaa;font-weight:500;text-transform:none">(cannot be changed)</span></label>
+        <input type="email" id="rpepEmail" readonly/>
+      </div>
+      <div class="rpep-row">
+        <div class="rpep-field">
+          <label>Date of Birth</label>
+          <input type="date" id="rpepDob"/>
+        </div>
+        <div class="rpep-field">
+          <label>Gender</label>
+          <select id="rpepGender">
+            <option value="">Select gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+            <option value="Prefer not to say">Prefer not to say</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Address -->
+      <div class="rpep-section">Default Address</div>
+      <div class="rpep-field">
+        <label>Street / Area</label>
+        <input type="text" id="rpepAddress" placeholder="House no., street, area" maxlength="120"/>
+      </div>
+      <div class="rpep-row">
+        <div class="rpep-field">
+          <label>City / Town</label>
+          <input type="text" id="rpepCity" placeholder="City or town" maxlength="60"/>
+        </div>
+        <div class="rpep-field">
+          <label>Pincode</label>
+          <input type="tel" id="rpepPincode" placeholder="6-digit pincode" maxlength="6"/>
+        </div>
+      </div>
+
+      <div class="rpep-msg" id="rpepMsg"></div>
+      <div class="rpep-actions">
+        <button class="rpep-btn-save" id="rpepSaveBtn" onclick="rpDoUpdateProfile()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" style="vertical-align:middle;margin-right:5px"><polyline points="20 6 9 17 4 12"/></svg>
+          Save Changes
+        </button>
+        <button class="rpep-btn-cancel" onclick="rpEditProfileClose()">Cancel</button>
+      </div>
+
+    </div>
+  </div>
+</div>`;
+    document.body.insertAdjacentHTML('beforeend', html);
+  }
+
+  // ── Open Edit Profile Modal ───────────────────────────────
+  window.rpOpenEditProfile = function () {
+    const user = getUser();
+    if (!user) { rpAuthOpen('login'); return; }
+    injectEditProfileModal();
+
+    // Populate fields
+    const initials = _initials(user.name || user.email);
+    document.getElementById('rpepAvatarBig').textContent  = initials;
+    document.getElementById('rpepAvatarName').textContent = user.name || user.email.split('@')[0];
+    document.getElementById('rpepAvatarEmail').textContent = user.email;
+    document.getElementById('rpepName').value    = user.name    || '';
+    document.getElementById('rpepPhone').value   = user.phone   || '';
+    document.getElementById('rpepEmail').value   = user.email   || '';
+    document.getElementById('rpepDob').value     = user.dob     || '';
+    document.getElementById('rpepGender').value  = user.gender  || '';
+    document.getElementById('rpepAddress').value = user.address || '';
+    document.getElementById('rpepCity').value    = user.city    || '';
+    document.getElementById('rpepPincode').value = user.pincode || '';
+
+    // Clear any previous message
+    const msg = document.getElementById('rpepMsg');
+    if (msg) { msg.className = 'rpep-msg'; msg.textContent = ''; }
+
+    document.getElementById('rpEditProfileOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => { const n = document.getElementById('rpepName'); if (n) n.focus(); }, 280);
+  };
+
+  window.rpEditProfileClose = function () {
+    const ov = document.getElementById('rpEditProfileOverlay');
+    if (ov) ov.classList.remove('open');
+    document.body.style.overflow = '';
+  };
+
+  // ── Save Profile Changes ──────────────────────────────────
+  window.rpDoUpdateProfile = async function () {
+    const user = getUser();
+    if (!user) return;
+
+    const name    = document.getElementById('rpepName').value.trim();
+    const phone   = document.getElementById('rpepPhone').value.replace(/\D/g,'').slice(-10);
+    const dob     = document.getElementById('rpepDob').value.trim();
+    const gender  = document.getElementById('rpepGender').value;
+    const address = document.getElementById('rpepAddress').value.trim();
+    const city    = document.getElementById('rpepCity').value.trim();
+    const pincode = document.getElementById('rpepPincode').value.replace(/\D/g,'').slice(0,6);
+
+    if (!name)  return _rpepMsg('Full name is required.', 'error');
+    if (phone && phone.length !== 10) return _rpepMsg('Enter a valid 10-digit phone number.', 'error');
+    if (pincode && pincode.length !== 6) return _rpepMsg('Pincode must be 6 digits.', 'error');
+
+    const btn = document.getElementById('rpepSaveBtn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+
+    try {
+      const res = await apiPost({
+        action: 'rpUpdateProfile',
+        userId: user.id,
+        email:  user.email,
+        name, phone, dob, gender, address, city, pincode
+      });
+
+      if (res.success) {
+        // Merge updated fields back into localStorage — preserve original _expiry, do NOT reset it
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const stored = raw ? JSON.parse(raw) : {};
+        const updated = {
+          ...stored,
+          name:    res.user.name    || stored.name,
+          phone:   res.user.phone   || stored.phone,
+          dob:     res.user.dob     || stored.dob     || '',
+          gender:  res.user.gender  || stored.gender  || '',
+          address: res.user.address || stored.address || '',
+          city:    res.user.city    || stored.city    || '',
+          pincode: res.user.pincode || stored.pincode || '',
+          _expiry: stored._expiry
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+
+        // Refresh profile panel header
+        const freshUser = getUser();
+        if (freshUser) {
+          const ini = _initials(freshUser.name || freshUser.email);
+          const av = document.getElementById('rppAvatar');
+          const nm = document.getElementById('rppName');
+          const ph = document.getElementById('rppPhone');
+          if (av) av.textContent = ini;
+          if (nm) nm.textContent = freshUser.name || freshUser.email.split('@')[0];
+          if (ph) {
+            ph.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,215,0,.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>';
+            ph.appendChild(document.createTextNode(' ' + (freshUser.phone || '\u2014')));
+          }
+          // Rebuild profile body to reflect new data
+          buildProfileBody(freshUser);
+          if (typeof rpBuildSiteMenu === 'function') rpBuildSiteMenu();
+        }
+        updateAuthUI();
+        _rpepMsg('Profile updated successfully!', 'success');
+        setTimeout(() => rpEditProfileClose(), 1400);
+        _showToast('✅ Profile updated!');
+      } else {
+        _rpepMsg(res.error || 'Update failed. Please try again.', 'error');
+      }
+    } catch {
+      _rpepMsg('Network error. Please try again.', 'error');
+    }
+    btn.disabled = false;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" style="vertical-align:middle;margin-right:5px"><polyline points="20 6 9 17 4 12"/></svg> Save Changes';
+  };
+
+  function _rpepMsg(text, type) {
+    const el = document.getElementById('rpepMsg');
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'rpep-msg ' + type;
+  }
+
   // ── Build profile body ────────────────────────────────────
   function buildProfileBody(user) {
     const isSeller = user.type === 'seller';
     const sellerStatus = user.sellerStatus || '';
     const initials = _initials(user.name || user.email);
 
-    // Header
+    // Join as Seller small circle button in header (non-sellers only)
+    const joinBtn = document.getElementById('rppJoinSellerBtn');
+    if (joinBtn) {
+      joinBtn.innerHTML = !isSeller
+        ? `<a href="https://rathnaseller.rathnaproducts.store" target="_blank" rel="noopener" class="rpp-join-seller-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            <span class="rpp-join-tip">Join as Seller</span>
+          </a>`
+        : '';
+    }
+
+    // Header — use textContent to prevent XSS
     document.getElementById('rppAvatar').textContent = initials;
     document.getElementById('rppName').textContent   = user.name || user.email.split('@')[0];
     document.getElementById('rppEmail').textContent  = user.email;
-    document.getElementById('rppPhone').textContent  = '📞 ' + (user.phone || '—');
+    const phoneEl = document.getElementById('rppPhone');
+    phoneEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,215,0,.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>';
+    const phoneText = document.createTextNode(' ' + (user.phone || '\u2014'));
+    phoneEl.appendChild(phoneText);
 
     const body = document.getElementById('rppBody');
 
     // Seller status banner OR become-seller banner
     let sellerHtml = '';
     if (isSeller) {
-      const statusEmoji = sellerStatus === 'Approved' ? '✅' : sellerStatus === 'Rejected' ? '❌' : '⏳';
+      const statusIcon = sellerStatus === 'Approved'
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="vertical-align:middle;margin-right:4px"><polyline points="20 6 9 17 4 12"/></svg>'
+        : sellerStatus === 'Rejected'
+        ? '<svg viewBox="0 0 24 24" fill="none" stroke="#c0392b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="vertical-align:middle;margin-right:4px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="vertical-align:middle;margin-right:4px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
       const _esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
       sellerHtml = `
         <div class="rpp-seller-status">
-          <h4>${statusEmoji} Seller Account — ${_esc(sellerStatus)}</h4>
+          <h4>${statusIcon} Seller Account — ${_esc(sellerStatus)}</h4>
           <p>Seller ID: <strong>${_esc(user.sellerId || user.id)}</strong></p>
           ${sellerStatus === 'Approved'
             ? '<p style="margin-top:6px">Your seller account is active. Visit the portal to manage orders.</p>'
@@ -697,16 +1147,16 @@
             : '<p style="margin-top:6px">Your seller registration is under review by admin.</p>'
           }
           <a href="https://rathnaseller.rathnaproducts.store" target="_blank" rel="noopener noreferrer"
-             style="display:inline-block;margin-top:10px;background:#1565c0;color:#fff;padding:7px 18px;border-radius:20px;font-size:.8rem;font-weight:800;text-decoration:none">
-            🚀 Open Seller Portal
+             style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;background:#1565c0;color:#fff;padding:7px 18px;border-radius:20px;font-size:.8rem;font-weight:800;text-decoration:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg> Open Seller Portal
           </a>
         </div>`;
     } else {
       sellerHtml = `
         <div class="rpp-seller-banner">
-          <h4>🤝 Become a RATHNA Seller</h4>
+          <h4 style="display:flex;align-items:center;justify-content:center;gap:7px"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> Become a RATHNA Seller</h4>
           <p>Sell RATHNA Products in your area. Earn the full product price per order — plus delivery charge if you ship yourself.</p>
-          <a href="https://rathnaseller.rathnaproducts.store" target="_blank" rel="noopener">Join as Seller →</a>
+          <a href="https://rathnaseller.rathnaproducts.store" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px">Join as Seller <svg viewBox="0 0 24 24" fill="none" stroke="#1565c0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
         </div>`;
     }
 
@@ -727,22 +1177,40 @@
 
       <div id="rpSiteMenu"></div>
 
-      <div class="rpp-section-title">Quick Links</div>
-      <div class="rpp-card">
-        <a class="rpp-menu-item" href="https://rathnaproducts.store" target="_blank" rel="noopener" style="text-decoration:none">
-          <span class="rpp-icon" style="background:#fff5f5"><svg viewBox="0 0 24 24" fill="none" stroke="#8B0000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
-          <span>RATHNA Products Home</span>
-          <span class="rpp-arrow">›</span>
+      <div class="rpp-section-title">Our Brands</div>
+      <div class="rpp-brand-logos">
+        <a href="https://rathnaproducts.store" target="_blank" rel="noopener" class="rpp-brand-logo-btn" title="RATHNA Products">
+          <img src="https://rathnaproducts.store/rathna%20logo2.0.png" alt="RATHNA Products"/>
         </a>
-        <a class="rpp-menu-item" href="https://homemade1.rathnaproducts.store" target="_blank" rel="noopener" style="text-decoration:none">
-          <span class="rpp-icon" style="background:#f0fdf4"><svg viewBox="0 0 24 24" fill="none" stroke="#2e7d32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M17 8C8 10 5.9 16.17 3.82 19.5c-.19.31.18.69.49.49C7.17 18.1 13.34 16 16 8"/><path d="M3 21c3-3 4-6 4-9a5 5 0 0110 0c0 3 1 6 4 9"/></svg></span>
-          <span>Home Made Store</span>
-          <span class="rpp-arrow">›</span>
+        <a href="https://homemade1.rathnaproducts.store" target="_blank" rel="noopener" class="rpp-brand-logo-btn" title="Home Made">
+          <img src="https://rathnaproducts.store/home%20made.png" alt="Home Made"/>
         </a>
-        <a class="rpp-menu-item" href="https://rathnasarees.rathnaproducts.store" target="_blank" rel="noopener" style="text-decoration:none">
-          <span class="rpp-icon" style="background:#fdf4ff"><svg viewBox="0 0 24 24" fill="none" stroke="#7b1fa2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></span>
-          <span>RATHNA Sarees</span>
-          <span class="rpp-arrow">›</span>
+        <a href="https://rathnasarees.rathnaproducts.store" target="_blank" rel="noopener" class="rpp-brand-logo-btn" title="RATHNA Sarees">
+          <img src="https://rathnaproducts.store/rathna%20sarees.png" alt="RATHNA Sarees"/>
+        </a>
+        <a href="https://generator.rathnaproducts.store" target="_blank" rel="noopener" class="rpp-brand-logo-btn" title="RATHNA Generator">
+          <img src="https://rathnaproducts.store/generator.png" alt="Generator"/>
+        </a>
+        <a href="https://researchservices.rathnaproducts.store" target="_blank" rel="noopener" class="rpp-brand-logo-btn" title="Research Services">
+          <img src="https://rathnaproducts.store/research%20services.png" alt="Research Services"/>
+        </a>
+        <a href="https://researchpositions.rathnaproducts.store" target="_blank" rel="noopener" class="rpp-brand-logo-btn" title="Research Positions">
+          <img src="https://rathnaproducts.store/research%20positon.png" alt="Research Positions"/>
+        </a>
+        <a href="https://rathnaseller.rathnaproducts.store" target="_blank" rel="noopener" class="rpp-brand-logo-btn" title="RATHNA Seller">
+          <img src="https://rathnaproducts.store/rathna%20seller.png" alt="RATHNA Seller"/>
+        </a>
+        <a href="https://rathnawebs.rathnaproducts.store" target="_blank" rel="noopener" class="rpp-brand-logo-btn" title="RATHNA Webs">
+          <img src="https://rathnaproducts.store/rathnawebs.png" alt="RATHNA Webs"/>
+        </a>
+        <a href="https://rptools.rathnaproducts.store" target="_blank" rel="noopener" class="rpp-brand-logo-btn" title="RP Tools">
+          <img src="https://rathnaproducts.store/rptools.png" alt="RP Tools"/>
+        </a>
+        <a href="https://picky.rathnaproducts.store" target="_blank" rel="noopener" class="rpp-brand-logo-btn" title="Picky">
+          <img src="https://rathnaproducts.store/picky.png" alt="Picky"/>
+        </a>
+        <a href="https://rpdelivers.rathnaproducts.store" target="_blank" rel="noopener" class="rpp-brand-logo-btn" title="RP Delivers">
+          <img src="https://rathnaproducts.store/RPdeliver.png" alt="RP Delivers"/>
         </a>
       </div>
 
@@ -759,14 +1227,14 @@
           <span class="rpp-arrow">›</span>
         </a>
         <a class="rpp-menu-item" href="https://rathnaproducts.store/privacy.html" target="_blank" rel="noopener" style="text-decoration:none">
-          <span class="rpp-icon" style="background:#f8fafc"><svg viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+          <span class="rpp-icon" style="background:#f8fafc"><svg viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></span>
           <span>Privacy Policy</span>
           <span class="rpp-arrow">›</span>
         </a>
       </div>
 
       <div style="padding:4px 2px 8px">
-        ${sellerHtml}
+        ${isSeller ? sellerHtml : ''}
         <button class="rpp-menu-item danger" onclick="rpLogout()" style="border-radius:14px;border:1.5px solid #fecaca;background:#fff5f5">
           <span class="rpp-icon" style="background:#fee2e2"><svg viewBox="0 0 24 24" fill="none" stroke="#c0392b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>
           <span>Logout</span>
@@ -834,6 +1302,7 @@
     if (!cur || !nw || !nw2) { msg.style.color='#c0392b'; msg.textContent='Fill all fields.'; return; }
     if (nw.length < 6)        { msg.style.color='#c0392b'; msg.textContent='New password must be at least 6 characters.'; return; }
     if (nw !== nw2)           { msg.style.color='#c0392b'; msg.textContent='New passwords do not match.'; return; }
+    if (cur === nw)           { msg.style.color='#c0392b'; msg.textContent='New password must be different from current password.'; return; }
     msg.style.color='#888'; msg.textContent='Updating…';
     try {
       const res = await apiPost({ action: 'rpChangePassword', email: user.email, currentPassword: cur, newPassword: nw });
@@ -896,7 +1365,7 @@
       if (typeof showSection === 'function') showSection('register');
       return;
     }
-    rpProfileOpen();
+    window.open('https://rathnaseller.rathnaproducts.store', '_blank');
   };
 
   // ── Init ──────────────────────────────────────────────────
@@ -904,6 +1373,8 @@
     injectCSS();
     injectAuthModal();
     injectProfilePanel();
+    injectEditProfileModal();
+    _wireRememberMe();
     updateAuthUI();
   }
 
