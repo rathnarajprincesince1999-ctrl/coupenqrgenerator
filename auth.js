@@ -818,12 +818,136 @@
   };
 
   // ── Forgot password ───────────────────────────────────────
+  // ── Forgot Password Modal (3-step: email → OTP → new password) ──
+  let _fpEmail = '';
+
+  function injectForgotModal() {
+    if (document.getElementById('rpFpOverlay')) return;
+    document.body.insertAdjacentHTML('beforeend', `
+<div id="rpFpOverlay" onclick="if(event.target===this)rpFpClose()" style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100001;display:none;align-items:center;justify-content:center;padding:12px">
+  <div style="background:#fff;border-radius:22px;width:100%;max-width:400px;box-shadow:0 28px 80px rgba(0,0,0,.35);overflow:hidden;animation:rpSlideUp .28s cubic-bezier(.34,1.56,.64,1)">
+    <div style="background:linear-gradient(135deg,#8B0000,#c0392b);padding:18px 22px 15px;display:flex;align-items:center;justify-content:space-between">
+      <h2 style="color:#fff;font-size:1rem;font-weight:900;margin:0">&#128273; Reset Password</h2>
+      <button onclick="rpFpClose()" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:1.3rem;cursor:pointer;padding:2px 7px;border-radius:6px">&#x2715;</button>
+    </div>
+    <div style="padding:20px 22px 24px">
+      <div id="rpFpStep1">
+        <p style="font-size:.85rem;color:#555;margin:0 0 14px">Enter your registered email to receive a reset code.</p>
+        <div class="rpa-field"><label>Email Address</label>
+          <input type="email" id="rpFpEmail" placeholder="you@example.com" autocomplete="email" onkeydown="if(event.key==='Enter')rpFpSendCode()"/>
+        </div>
+        <button class="rpa-btn" id="rpFpSendBtn" onclick="rpFpSendCode()">Send Reset Code</button>
+        <div class="rpa-msg" id="rpFpMsg1"></div>
+      </div>
+      <div id="rpFpStep2" style="display:none">
+        <p style="font-size:.85rem;color:#555;margin:0 0 14px">Enter the 6-digit code sent to <strong id="rpFpEmailShow"></strong></p>
+        <div class="rpa-field"><label>Reset Code</label>
+          <input type="number" id="rpFpCode" placeholder="6-digit code" onkeydown="if(event.key==='Enter')rpFpVerifyCode()" style="font-size:1.4rem;font-weight:900;letter-spacing:6px;text-align:center"/>
+        </div>
+        <button class="rpa-btn" id="rpFpVerifyBtn" onclick="rpFpVerifyCode()">Verify Code</button>
+        <div class="rpa-msg" id="rpFpMsg2"></div>
+        <div style="text-align:center;margin-top:10px"><a onclick="rpFpBack()" style="font-size:.78rem;color:#8B0000;font-weight:700;cursor:pointer;text-decoration:underline">&#8592; Use different email</a></div>
+      </div>
+      <div id="rpFpStep3" style="display:none">
+        <p style="font-size:.85rem;color:#555;margin:0 0 14px">Create a new password for your account.</p>
+        <div class="rpa-field"><label>New Password</label>
+          <input type="password" id="rpFpNewPass" placeholder="Min 6 characters" autocomplete="new-password"/>
+        </div>
+        <div class="rpa-field"><label>Confirm New Password</label>
+          <input type="password" id="rpFpNewPass2" placeholder="Repeat new password" autocomplete="new-password" onkeydown="if(event.key==='Enter')rpFpDoReset()"/>
+        </div>
+        <button class="rpa-btn" id="rpFpResetBtn" onclick="rpFpDoReset()">Reset Password</button>
+        <div class="rpa-msg" id="rpFpMsg3"></div>
+      </div>
+    </div>
+  </div>
+</div>`);
+  }
+
   window.rpForgotPwd = function () {
-    const email = document.getElementById('rpLEmail').value.trim();
-    const msg = email
-      ? 'Contact admin@rathnaproducts.store or WhatsApp +91 82485 99487 with your registered email/phone: ' + email
-      : 'Contact admin@rathnaproducts.store or WhatsApp +91 82485 99487 to reset your password.';
-    showMsg('rpLoginMsg', msg, 'error');
+    injectForgotModal();
+    _fpEmail = document.getElementById('rpLEmail')?.value.trim() || '';
+    if (_fpEmail) document.getElementById('rpFpEmail').value = _fpEmail;
+    document.getElementById('rpFpOverlay').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => { const e = document.getElementById('rpFpEmail'); if (e) e.focus(); }, 100);
+  };
+
+  window.rpFpClose = function () {
+    const ov = document.getElementById('rpFpOverlay');
+    if (ov) ov.style.display = 'none';
+    document.body.style.overflow = '';
+  };
+
+  window.rpFpBack = function () {
+    document.getElementById('rpFpStep1').style.display = '';
+    document.getElementById('rpFpStep2').style.display = 'none';
+    document.getElementById('rpFpStep3').style.display = 'none';
+    ['rpFpMsg1','rpFpMsg2','rpFpMsg3'].forEach(id => {
+      const el = document.getElementById(id); if (el) { el.className = 'rpa-msg'; el.textContent = ''; }
+    });
+  };
+
+  function _fpMsg(id, text, type) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'rpa-msg ' + type;
+  }
+
+  window.rpFpSendCode = async function () {
+    const email = document.getElementById('rpFpEmail').value.trim();
+    if (!email) return _fpMsg('rpFpMsg1', 'Please enter your email address.', 'error');
+    const btn = document.getElementById('rpFpSendBtn');
+    btn.disabled = true; btn.textContent = 'Sending…';
+    try {
+      const res = await apiPost({ action: 'rpForgotPassword', email });
+      if (res.success) {
+        _fpEmail = email;
+        document.getElementById('rpFpEmailShow').textContent = email;
+        document.getElementById('rpFpStep1').style.display = 'none';
+        document.getElementById('rpFpStep2').style.display = '';
+        document.getElementById('rpFpCode').value = '';
+        setTimeout(() => { const c = document.getElementById('rpFpCode'); if (c) c.focus(); }, 100);
+      } else {
+        _fpMsg('rpFpMsg1', res.error || 'Failed to send code.', 'error');
+      }
+    } catch { _fpMsg('rpFpMsg1', 'Network error. Please try again.', 'error'); }
+    btn.disabled = false; btn.textContent = 'Send Reset Code';
+  };
+
+  window.rpFpVerifyCode = function () {
+    const code = document.getElementById('rpFpCode').value.trim();
+    if (code.length !== 6) return _fpMsg('rpFpMsg2', 'Enter the 6-digit code from your email.', 'error');
+    document.getElementById('rpFpStep2').style.display = 'none';
+    document.getElementById('rpFpStep3').style.display = '';
+    setTimeout(() => { const p = document.getElementById('rpFpNewPass'); if (p) p.focus(); }, 100);
+  };
+
+  window.rpFpDoReset = async function () {
+    const code  = document.getElementById('rpFpCode').value.trim();
+    const pass  = document.getElementById('rpFpNewPass').value;
+    const pass2 = document.getElementById('rpFpNewPass2').value;
+    if (pass.length < 6) return _fpMsg('rpFpMsg3', 'Password must be at least 6 characters.', 'error');
+    if (pass !== pass2)  return _fpMsg('rpFpMsg3', 'Passwords do not match.', 'error');
+    const btn = document.getElementById('rpFpResetBtn');
+    btn.disabled = true; btn.textContent = 'Resetting…';
+    try {
+      const res = await apiPost({ action: 'rpResetPassword', email: _fpEmail, code, newPassword: pass });
+      if (res.success) {
+        _fpMsg('rpFpMsg3', '&#10003; Password reset! You can now log in.', 'success');
+        setTimeout(() => { rpFpClose(); rpAuthOpen('login'); }, 1800);
+      } else {
+        _fpMsg('rpFpMsg3', res.error || 'Reset failed. Please try again.', 'error');
+        if (res.error && (res.error.includes('Invalid') || res.error.includes('expired'))) {
+          setTimeout(() => {
+            document.getElementById('rpFpStep3').style.display = 'none';
+            document.getElementById('rpFpStep2').style.display = '';
+          }, 1500);
+        }
+      }
+    } catch { _fpMsg('rpFpMsg3', 'Network error. Please try again.', 'error'); }
+    btn.disabled = false; btn.textContent = 'Reset Password';
   };
 
   // ── Logout ────────────────────────────────────────────────
