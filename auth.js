@@ -488,32 +488,22 @@
   // ── Auth Modal HTML ───────────────────────────────────────
   const RP_GOOGLE_CLIENT_ID = '1064753915121-sl01uojh0q5ufcokck11ntstcn8a2dhp.apps.googleusercontent.com';
 
-  // Load GIS script eagerly (like Linksy does) so it's ready before any click
-  function _loadGIS(cb) {
-    if (window.google && window.google.accounts) { cb(); return; }
-    let s = document.getElementById('_rp_gis_script');
-    if (s) { s.addEventListener('load', cb); return; }
-    s = document.createElement('script');
-    s.id  = '_rp_gis_script';
-    s.src = 'https://accounts.google.com/gsi/client';
-    s.addEventListener('load', cb);
-    document.head.appendChild(s);
-  }
-
-  // Pre-initialize GIS once on page load — NOT inside the button click
+  // Initialize GIS exactly like Linksy:
+  // The HTML page loads <script src="https://accounts.google.com/gsi/client"> synchronously,
+  // so google.accounts is already available when this runs.
+  // We just call initialize() once — never inside the button click handler.
   function _initGIS() {
-    _loadGIS(() => {
-      google.accounts.id.initialize({
-        client_id:             RP_GOOGLE_CLIENT_ID,
-        callback:              _onGoogleCredential,
-        intermediate_iframe_close_callback: function() {
-          const ov = document.getElementById('rpAuthOverlay');
-          if (ov) ov.style.zIndex = '99999';
-        },
-        auto_select:           false,
-        cancel_on_tap_outside: false,
-        ux_mode:               'popup'
-      });
+    if (!window.google || !window.google.accounts) return; // GIS script not in HTML yet
+    google.accounts.id.initialize({
+      client_id:             RP_GOOGLE_CLIENT_ID,
+      callback:              _onGoogleCredential,
+      intermediate_iframe_close_callback: function() {
+        const ov = document.getElementById('rpAuthOverlay');
+        if (ov) ov.style.zIndex = '99999';
+      },
+      auto_select:           false,
+      cancel_on_tap_outside: true,
+      ux_mode:               'popup'
     });
   }
 
@@ -567,28 +557,25 @@
     });
   }
 
+  // Exactly like Linksy's button click handler:
+  // GIS is already initialized on page load, so just renderButton + click.
   window.rpTriggerGoogle = function() {
     if (!window.google || !window.google.accounts) {
-      showMsg('rpLoginMsg',  'Google sign-in loading… please try again.', 'error');
-      showMsg('rpSignupMsg', 'Google sign-in loading… please try again.', 'error');
-      _initGIS();
+      showMsg('rpLoginMsg',  'Google sign-in not available. Please refresh the page.', 'error');
+      showMsg('rpSignupMsg', 'Google sign-in not available. Please refresh the page.', 'error');
       return;
     }
-    // Lower overlay so Google popup iframe renders on top
+    // Lower overlay z-index so Google popup renders on top (same fix as before)
     const overlay = document.getElementById('rpAuthOverlay');
     if (overlay) overlay.style.zIndex = '999';
 
-    let gd = document.getElementById('_rp_gis_div');
-    if (!gd) {
-      gd = document.createElement('div');
-      gd.id = '_rp_gis_div';
-      gd.style.cssText = 'position:fixed;bottom:-9999px;left:-9999px;z-index:9999999;pointer-events:none';
-      document.body.appendChild(gd);
-    }
-    gd.innerHTML = '';
+    const gd = document.createElement('div');
+    gd.style.display = 'none';
+    document.body.appendChild(gd);
     google.accounts.id.renderButton(gd, { type: 'standard', theme: 'outline', size: 'large' });
+
     setTimeout(() => {
-      const rb = gd.querySelector('[role="button"],button,div[tabindex="0"]');
+      const rb = gd.querySelector('[role="button"],button,div[tabindex]');
       if (rb) {
         rb.click();
       } else {
@@ -596,7 +583,8 @@
         showMsg('rpLoginMsg',  'Google sign-in unavailable. Try again.', 'error');
         showMsg('rpSignupMsg', 'Google sign-in unavailable. Try again.', 'error');
       }
-    }, 150);
+      gd.remove();
+    }, 300);
   };
 
   function injectAuthModal() {
