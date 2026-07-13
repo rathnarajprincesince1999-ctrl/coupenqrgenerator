@@ -224,6 +224,7 @@
 #rpAuthOverlay {
   position:fixed; inset:0; background:rgba(0,0,0,.6);
   z-index:99999; display:none; align-items:center; justify-content:center; padding:12px;
+  isolation:isolate;
 }
 #rpAuthOverlay.open { display:flex; }
 #rpAuthModal {
@@ -487,12 +488,33 @@
   // ── Auth Modal HTML ───────────────────────────────────────
   const RP_GOOGLE_CLIENT_ID = '1064753915121-sl01uojh0q5ufcokck11ntstcn8a2dhp.apps.googleusercontent.com';
 
+  // Load GIS script eagerly (like Linksy does) so it's ready before any click
   function _loadGIS(cb) {
     if (window.google && window.google.accounts) { cb(); return; }
-    const s = document.createElement('script');
+    let s = document.getElementById('_rp_gis_script');
+    if (s) { s.addEventListener('load', cb); return; }
+    s = document.createElement('script');
+    s.id  = '_rp_gis_script';
     s.src = 'https://accounts.google.com/gsi/client';
-    s.onload = cb;
+    s.addEventListener('load', cb);
     document.head.appendChild(s);
+  }
+
+  // Pre-initialize GIS once on page load — NOT inside the button click
+  function _initGIS() {
+    _loadGIS(() => {
+      google.accounts.id.initialize({
+        client_id:             RP_GOOGLE_CLIENT_ID,
+        callback:              _onGoogleCredential,
+        intermediate_iframe_close_callback: function() {
+          const ov = document.getElementById('rpAuthOverlay');
+          if (ov) ov.style.zIndex = '99999';
+        },
+        auto_select:           false,
+        cancel_on_tap_outside: false,
+        ux_mode:               'popup'
+      });
+    });
   }
 
   function _googleBtnHTML(label) {
@@ -500,6 +522,10 @@
   }
 
   async function _onGoogleCredential(response) {
+    // Restore overlay z-index (was lowered to let Google popup render on top)
+    const overlay = document.getElementById('rpAuthOverlay');
+    if (overlay) overlay.style.zIndex = '99999';
+
     const parts   = response.credential.split('.');
     const padded  = parts[1].replace(/-/g, '+').replace(/_/g, '/');
     const payload = JSON.parse(atob(padded));
@@ -542,27 +568,35 @@
   }
 
   window.rpTriggerGoogle = function() {
-    _loadGIS(() => {
-      google.accounts.id.initialize({
-        client_id:             RP_GOOGLE_CLIENT_ID,
-        callback:              _onGoogleCredential,
-        auto_select:           false,
-        cancel_on_tap_outside: true,
-        ux_mode:               'popup'
-      });
-      google.accounts.id.prompt(n => {
-        if (n.isNotDisplayed() || n.isSkippedMoment()) {
-          // Fallback: render hidden button and click it
-          let gd = document.getElementById('_rp_gis_div');
-          if (!gd) { gd = document.createElement('div'); gd.id = '_rp_gis_div'; gd.style.display = 'none'; document.body.appendChild(gd); }
-          google.accounts.id.renderButton(gd, { type: 'standard', theme: 'outline', size: 'large' });
-          setTimeout(() => {
-            const rb = gd.querySelector('[role="button"],button,div[tabindex]');
-            if (rb) rb.click();
-          }, 200);
-        }
-      });
-    });
+    if (!window.google || !window.google.accounts) {
+      showMsg('rpLoginMsg',  'Google sign-in loading… please try again.', 'error');
+      showMsg('rpSignupMsg', 'Google sign-in loading… please try again.', 'error');
+      _initGIS();
+      return;
+    }
+    // Lower overlay so Google popup iframe renders on top
+    const overlay = document.getElementById('rpAuthOverlay');
+    if (overlay) overlay.style.zIndex = '999';
+
+    let gd = document.getElementById('_rp_gis_div');
+    if (!gd) {
+      gd = document.createElement('div');
+      gd.id = '_rp_gis_div';
+      gd.style.cssText = 'position:fixed;bottom:-9999px;left:-9999px;z-index:9999999;pointer-events:none';
+      document.body.appendChild(gd);
+    }
+    gd.innerHTML = '';
+    google.accounts.id.renderButton(gd, { type: 'standard', theme: 'outline', size: 'large' });
+    setTimeout(() => {
+      const rb = gd.querySelector('[role="button"],button,div[tabindex="0"]');
+      if (rb) {
+        rb.click();
+      } else {
+        if (overlay) overlay.style.zIndex = '99999';
+        showMsg('rpLoginMsg',  'Google sign-in unavailable. Try again.', 'error');
+        showMsg('rpSignupMsg', 'Google sign-in unavailable. Try again.', 'error');
+      }
+    }, 150);
   };
 
   function injectAuthModal() {
@@ -1500,6 +1534,7 @@
     injectEditProfileModal();
     _wireRememberMe();
     updateAuthUI();
+    _initGIS(); // pre-load GIS eagerly so popup works on first click
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
